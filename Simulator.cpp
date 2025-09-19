@@ -37,3 +37,13 @@ void Simulator::start()
     menu = new Menu();
     menu->execute();
 }
+
+std::string Simulator::getAlgorithmScheduler() const
+{
+    return extraInfo->getAlgorithmScheduler();
+}
+
+unsigned int Simulator::getQuantum() const
+{
+    return extraInfo->getQuantum();
+}

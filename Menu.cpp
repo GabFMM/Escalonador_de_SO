@@ -82,6 +82,10 @@ void Menu::createConfirmationScreen(std::vector<TCB> tasks)
     clearTerminal();
 
     std::cout << "Confirme as configuracoes:\n" << std::endl;
+
+    std::cout << "Algoritmo do escalonador: " << simulator->getAlgorithmScheduler() << std::endl;
+    std::cout << "Duracao do quantum: " << simulator->getQuantum() << "\n" << std::endl;
+
     std::cout << "Tarefas:\n" << std::endl;
 
     // Todas as informacoes de cada uma das tarefas sao mostradas no terminal 
