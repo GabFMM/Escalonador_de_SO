@@ -2,6 +2,8 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
+#include "TCB.h"
 
 class Simulator;
 
@@ -10,7 +12,6 @@ private:
     Simulator* simulator;
     static const std::string inicialText;
     static const std::string arquiveText;
-    static const std::string confirmationText;
     static const std::string algorithmText;
     static const std::string taskText;
     static const std::string chosenModeText;
@@ -20,5 +21,6 @@ public:
     ~Menu();
 
     void execute();
+    void createConfirmationScreen(std::vector<TCB> tasks);
     void clearTerminal();
 };

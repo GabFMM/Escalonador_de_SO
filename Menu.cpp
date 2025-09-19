@@ -18,10 +18,6 @@ const std::string Menu::arquiveText = R"(
     Digite a opcao (o numero) desejada:
 )";
 
-const std::string Menu::confirmationText = R"(
-    Confirme as configuracoes:
-)";
-
 Menu::Menu() : simulator(nullptr)
 {
 }
@@ -40,16 +36,42 @@ void Menu::execute()
 
     clearTerminal();
 
+    std::cout << arquiveText << std::endl;
     // Controla as diferentes entradas do usuario
     int option = -1;
     while(option < 1 || option > 2){
-        std::cout << arquiveText << std::endl;
+        std::cout << "\nOpcao invalida. Tente novamente.\n" << std::endl;
         std::cin >> option;
     }
 
     if(option == 1){
-        
+        createConfirmationScreen(simulator->loadArquive());
     }
+}
+
+void Menu::createConfirmationScreen(std::vector<TCB> tasks)
+{
+    clearTerminal();
+
+    std::cout << "Confirme as configuracoes:\n" << std::endl;
+    std::cout << "Tarefas:\n" << std::endl;
+
+    // Todas as informacoes de cada uma das tarefas sao mostradas no terminal 
+    size_t tam = tasks.size();
+    for(int i = 0; i < tam; i++){
+        std::cout << 
+            "ID: " << tasks[i].getId() << "\n" <<
+            "Color: " << tasks[i].getColor() << "\n" <<
+            "Duration: " << tasks[i].getDuration() << "\n" <<
+            "Priority: " << tasks[i].getPriority() << "\n" <<
+            "Entry time: " << tasks[i].getEntryTime() << "\n" <<
+        std::endl;
+    }
+
+    std::cout << "Pressione qualquer tecla para executar o simulador." << std::endl;
+    std::cin.get();
+
+    clearTerminal();
 }
 
 void Menu::clearTerminal(){
