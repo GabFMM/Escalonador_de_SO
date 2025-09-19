@@ -1,0 +1,14 @@
+# Specify the minimum required CMake version
+cmake_minimum_required(VERSION 3.22.1)
+
+# Define the project name
+project(Scheduler LANGUAGES CXX)
+
+# Specify the C++ standard to use
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+
+# Add an executable target
+# The first argument is the executable name
+# Subsequent arguments are the source files for the executable
+add_executable(Scheduler main.cpp)
