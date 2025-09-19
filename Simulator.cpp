@@ -4,7 +4,8 @@
 Simulator::Simulator() :
 menu(nullptr),
 scheduler(nullptr),
-imageGenerator(nullptr){
+imageGenerator(nullptr),
+extraInfo(nullptr){
 
 }
 
@@ -23,6 +24,11 @@ Simulator::~Simulator()
     if(imageGenerator != nullptr){
         delete imageGenerator;
         imageGenerator = nullptr;
+    }
+
+    if(extraInfo != nullptr){
+        delete extraInfo;
+        extraInfo = nullptr;
     }
 }
 

@@ -5,6 +5,7 @@
 #include "Scheduler.h"
 #include "GanttChartGenerator.h"
 #include "TCB.h"
+#include "ExtraInfo.h"
 
 class Menu;
 
@@ -14,6 +15,7 @@ private:
     Menu* menu;
     Scheduler* scheduler;
     GanttChartGenerator* imageGenerator;
+    ExtraInfo* extraInfo;
 
 public:
     Simulator();

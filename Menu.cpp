@@ -62,7 +62,7 @@ void Menu::createArquiveScreen()
     clearTerminal();
 
     std::cout << arquiveText << std::endl;
-    
+
     int option = checkEntryNumber(1, 2);
 
     clearTerminal();
@@ -107,7 +107,16 @@ void Menu::createChosenModeScreen()
     clearTerminal();
 
     std::cout << chosenModeText << std::endl;
-    checkEntryNumber(1, 2);
+    int option = checkEntryNumber(1, 2);
+
+    clearTerminal();
+
+    if(option == 1){
+        simulator->executeDebugger();
+    }
+    else if(option == 2){
+        simulator->executeNoDebugger();
+    }
 
     clearTerminal();
 }
