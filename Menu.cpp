@@ -18,6 +18,15 @@ const std::string Menu::arquiveText = R"(
     Digite a opcao (o numero) desejada:
 )";
 
+const std::string Menu::chosenModeText = R"(
+    Escolha o modo de execucao:
+
+    1 -> Passo a passo (Debugger)
+    2 -> Direto
+
+    Digite a opcao (o numero) desejada:
+)";
+
 Menu::Menu() : simulator(nullptr)
 {
 }
@@ -31,22 +40,41 @@ Menu::~Menu(){
 
 void Menu::execute()
 {
+    createInicialScreen();
+
+    createArquiveScreen();
+
+    createChosenModeScreen();
+}
+
+void Menu::createInicialScreen()
+{
+    clearTerminal();
+
     std::cout << inicialText << std::endl;
     std::cin.get();
 
     clearTerminal();
+}
+
+void Menu::createArquiveScreen()
+{
+    clearTerminal();
 
     std::cout << arquiveText << std::endl;
-    // Controla as diferentes entradas do usuario
-    int option = -1;
-    while(option < 1 || option > 2){
-        std::cout << "\nOpcao invalida. Tente novamente.\n" << std::endl;
-        std::cin >> option;
-    }
+    
+    int option = checkEntryNumber(1, 2);
+
+    clearTerminal();
 
     if(option == 1){
         createConfirmationScreen(simulator->loadArquive());
     }
+    else if(option == 2){
+
+    }
+
+    clearTerminal();
 }
 
 void Menu::createConfirmationScreen(std::vector<TCB> tasks)
@@ -74,7 +102,31 @@ void Menu::createConfirmationScreen(std::vector<TCB> tasks)
     clearTerminal();
 }
 
-void Menu::clearTerminal(){
+void Menu::createChosenModeScreen()
+{
+    clearTerminal();
+
+    std::cout << chosenModeText << std::endl;
+    checkEntryNumber(1, 2);
+
+    clearTerminal();
+}
+
+// Dada uma sequencia de opcoes, verifica se a entrada do usuario eh valida,
+// e retorna a opcao escolhida
+int Menu::checkEntryNumber(int firstOption, int lastOption)
+{
+    int option = -1;
+    while(option < firstOption || option > lastOption){
+        std::cout << "\nOpcao invalida. Tente novamente.\n" << std::endl;
+        std::cin >> option;
+    }
+
+    return option;
+}
+
+void Menu::clearTerminal()
+{
 #ifdef _WIN32
 	system("cls");  // Windows
 #else

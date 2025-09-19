@@ -20,7 +20,16 @@ public:
     Menu();
     ~Menu();
 
+    // metodo principal
     void execute();
+    
+    // metodos para criar partes do menu
+    void createInicialScreen();
+    void createArquiveScreen();
     void createConfirmationScreen(std::vector<TCB> tasks);
+    void createChosenModeScreen();
+
+    // metodos auxiliares
+    int checkEntryNumber(int firstOption, int lastOption);
     void clearTerminal();
 };
