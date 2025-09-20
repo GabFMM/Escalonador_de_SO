@@ -28,8 +28,11 @@ public:
     void createArquiveScreen();
     void createConfirmationScreen(std::vector<TCB> tasks);
     void createChosenModeScreen();
+    void createAlgorithmScreen();
+    void createTaskScreen();
 
     // metodos auxiliares
     int checkEntryNumber(int firstOption, int lastOption);
+    std::string checkEntryString(std::vector<std::string> targets);
     void clearTerminal();
 };

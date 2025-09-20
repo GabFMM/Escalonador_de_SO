@@ -27,6 +27,22 @@ const std::string Menu::chosenModeText = R"(
     Digite a opcao (o numero) desejada:
 )";
 
+const std::string Menu::algorithmText = R"(
+    Escolha um algoritmo para o escalonador:
+
+    1 -> FIFO (First In First Out)
+    2 -> SRTF (Shortest Remaining Time First)
+    3 -> Prioridade preemptiva
+
+    Digite a opcao (o numero) desejada:
+)";
+
+const std::string Menu::taskText = R"(
+    Criar nova tarefa?
+    
+    Numero minimo de tarefas para funcionar o simulador: 1
+)";
+
 Menu::Menu() : simulator(nullptr)
 {
 }
@@ -71,7 +87,8 @@ void Menu::createArquiveScreen()
         createConfirmationScreen(simulator->loadArquive());
     }
     else if(option == 2){
-
+        createAlgorithmScreen();
+        createTaskScreen();
     }
 
     clearTerminal();
@@ -125,17 +142,78 @@ void Menu::createChosenModeScreen()
     clearTerminal();
 }
 
+void Menu::createAlgorithmScreen()
+{
+    clearTerminal();
+
+    std::cout << algorithmText << std::endl;
+
+    simulator->setAlgorithmScheduler(checkEntryNumber(1, 3));
+
+    clearTerminal();
+}
+
+void Menu::createTaskScreen()
+{
+    clearTerminal();
+
+    std::cout << taskText << std::endl;
+
+    int numTasks = 0;
+    std::string option = "Y";
+
+    while(option == "Y" || option == "y"){
+        std::cout 
+            << "Numero atual de tarefas: " << numTasks << "\n\n"
+            << "Deseja criar uma nova tarefa? (Y ou N)" << std::endl;
+        
+        std::vector<std::string> targets;
+        targets.push_back("Y");
+        targets.push_back("y");
+        targets.push_back("N");
+        targets.push_back("n");
+
+        option = checkEntryString(targets);
+
+        if(option == "N" || option == "n") break;
+
+
+    }
+
+    clearTerminal();
+}
+
 // Dada uma sequencia de opcoes, verifica se a entrada do usuario eh valida,
 // e retorna a opcao escolhida
 int Menu::checkEntryNumber(int firstOption, int lastOption)
 {
-    int option = -1;
+    int option;
+    std::cin >> option;
+
     while(option < firstOption || option > lastOption){
         std::cout << "\nOpcao invalida. Tente novamente.\n" << std::endl;
         std::cin >> option;
     }
 
     return option;
+}
+
+// Dada um conjunto de strings desejadas, verifica se a entrada do usuario eh valida
+// Retorna a string que coincidiu com uma do conjunto
+std::string Menu::checkEntryString(std::vector<std::string> targets)
+{
+    std::string str;
+
+    while (true) {
+        std::cin >> str;
+
+        // verifica se str existe no vetor
+        if (std::find(targets.begin(), targets.end(), str) != targets.end()) {
+            return str; // achou, retorna
+        }
+
+        std::cout << "\nOpcao invalida. Tente novamente.\n" << std::endl;
+    }
 }
 
 void Menu::clearTerminal()

@@ -27,6 +27,8 @@ public:
     std::vector<TCB> loadArquive();
     void generateImage();
 
+    void setAlgorithmScheduler(int i);
+
     std::string getAlgorithmScheduler() const;
     unsigned int getQuantum() const;
 };
