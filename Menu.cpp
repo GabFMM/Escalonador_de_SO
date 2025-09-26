@@ -43,6 +43,20 @@ const std::string Menu::taskText = R"(
     Numero minimo de tarefas para funcionar o simulador: 1
 )";
 
+const std::string Menu::colorText = R"(
+    Selecione a cor da nova tarefa:
+
+    1 -> Vermelho
+    2 -> Verde
+    3 -> Amarelo
+    4 -> Azul
+    5 -> Magenta
+    6 -> Ciano
+    7 -> Branco
+
+    Digite a opcao (o numero) desejada:
+)";
+
 Menu::Menu() : simulator(nullptr)
 {
 }
@@ -177,7 +191,10 @@ void Menu::createTaskScreen()
 
         if(option == "N" || option == "n") break;
 
+        std::cout << "\nID da tarefa: " << numTasks << std::endl;
+        std::cout << colorText << std::endl;
 
+        int option = checkEntryNumber(1, 7);
     }
 
     clearTerminal();

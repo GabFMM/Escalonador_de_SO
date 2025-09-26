@@ -26,6 +26,7 @@ public:
     void executeNoDebugger();
     std::vector<TCB> loadArquive();
     void generateImage();
+    void addTask(TCB task);
 
     void setAlgorithmScheduler(int i);
 

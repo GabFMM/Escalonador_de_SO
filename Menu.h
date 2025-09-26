@@ -16,6 +16,9 @@ private:
     static const std::string taskText;
     static const std::string chosenModeText;
 
+    // New tasks
+    static const std::string colorText;
+
 public:
     Menu();
     ~Menu();
