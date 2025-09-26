@@ -2,7 +2,6 @@
 // Created by eduol on 22/09/2025.
 //
 
-#include "main.h"
 #include <iostream>
 
 int main() {
