@@ -103,6 +103,7 @@ void Menu::createArquiveScreen()
     else if(option == 2){
         createAlgorithmScreen();
         createTaskScreen();
+        createConfirmationScreen(simulator->getTasks());
     }
 
     clearTerminal();

@@ -30,6 +30,7 @@ public:
 
     void setAlgorithmScheduler(int i);
 
+    std::vector<TCB> getTasks() const;
     std::string getAlgorithmScheduler() const;
     unsigned int getQuantum() const;
 };

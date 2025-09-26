@@ -4,7 +4,7 @@
 #include "TCB.h"
 
 class Scheduler{
-private:
+protected:
     std::vector<TCB> tasks;
 
 public:
@@ -12,5 +12,6 @@ public:
     ~Scheduler();
 
     void setTasks(std::vector<TCB> t);
+    std::vector<TCB> getTasks();
     void addTask(TCB task);
 };
