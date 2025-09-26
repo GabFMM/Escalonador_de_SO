@@ -191,10 +191,35 @@ void Menu::createTaskScreen()
 
         if(option == "N" || option == "n") break;
 
+        TCB task;
+        int num;
+
+        task.setId(numTasks);
+
         std::cout << "\nID da tarefa: " << numTasks << std::endl;
         std::cout << colorText << std::endl;
 
-        int option = checkEntryNumber(1, 7);
+        task.setColor(checkEntryNumber(1, 7));
+
+        std::cout << "\nDigite o instante do tempo que a tarefa entra no simulador:" << std::endl;
+        std::cin >> num;
+
+        task.setEntryTime(num);
+
+        std::cout << "\nDigite a duracao da tarefa:" << std::endl;
+        std::cin >> num;
+
+        task.setDuration(num);
+
+        std::cout << "\nDigite a prioridade da tarefa:" << std::endl;
+        std::cin >> num;
+
+        task.setPriority(num);
+
+        numTasks++;
+        simulator->addTask(task);
+
+        clearTerminal();
     }
 
     clearTerminal();
