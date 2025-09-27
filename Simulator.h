@@ -1,6 +1,8 @@
 #pragma once
 
 #include <vector>
+#include <fstream>
+#include <sstream>
 
 #include "Scheduler.h"
 #include "GanttChartGenerator.h"
@@ -28,7 +30,8 @@ public:
     void generateImage();
     void addTask(TCB task);
 
-    void setAlgorithmScheduler(int i);
+    void setAlgorithmScheduler(int i); // Usado em Menu.cpp
+    void setAlgorithmScheduler(std::string algorithm);
 
     std::vector<TCB> getTasks() const;
     std::string getAlgorithmScheduler() const;
