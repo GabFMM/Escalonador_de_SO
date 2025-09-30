@@ -32,7 +32,7 @@ const std::string Menu::algorithmText = R"(
 
     1 -> FIFO (First In First Out)
     2 -> SRTF (Shortest Remaining Time First)
-    3 -> Prioridade preemptiva
+    3 -> PRIOp (Prioridade preemptiva)
 
     Digite a opcao (o numero) desejada:
 )";

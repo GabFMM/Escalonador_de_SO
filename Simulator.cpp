@@ -92,6 +92,44 @@ std::vector<TCB> Simulator::loadArquive()
     return tasks;
 }
 
+void Simulator::setAlgorithmScheduler(int i)
+{
+    if(i == 1){
+        FIFO* algo = new FIFO();
+
+        scheduler = static_cast<Scheduler*>(algo);
+    }
+    else if(i == 2){
+        SRTF* algo = new SRTF();
+
+        scheduler = static_cast<Scheduler*>(algo);
+    }
+    else if(i == 3){
+        PreemptivePriority* algo = new PreemptivePriority();
+
+        scheduler = static_cast<Scheduler*>(algo);
+    }
+}
+
+void Simulator::setAlgorithmScheduler(std::string algorithm)
+{
+    if(algorithm == "FIFO"){
+        FIFO* algo = new FIFO();
+
+        scheduler = static_cast<Scheduler*>(algo);
+    }
+    else if(algorithm == "SRTF"){
+        SRTF* algo = new SRTF();
+
+        scheduler = static_cast<Scheduler*>(algo);
+    }
+    else if(algorithm == "PRIOp"){
+        PreemptivePriority* algo = new PreemptivePriority();
+
+        scheduler = static_cast<Scheduler*>(algo);
+    }
+}
+
 std::string Simulator::getAlgorithmScheduler() const
 {
     return extraInfo->getAlgorithmScheduler();

@@ -3,6 +3,12 @@ Estrutura:
 algoritmo_escalonamento;quantum
 id;cor;ingresso;duracao;prioridade
 
+Algoritmos permitidos:
+
+FIFO
+SRTF
+PRIOp
+
 Exemplo:
 
 FIFO;2

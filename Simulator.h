@@ -8,6 +8,9 @@
 #include "GanttChartGenerator.h"
 #include "TCB.h"
 #include "ExtraInfo.h"
+#include "FIFO.h"
+#include "SRTF.h"
+#include "PreemptivePriority.h"
 
 class Menu;
 
