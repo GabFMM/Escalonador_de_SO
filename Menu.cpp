@@ -153,8 +153,6 @@ void Menu::createChosenModeScreen()
     else if(option == 2){
         simulator->executeNoDebugger();
     }
-
-    clearTerminal();
 }
 
 void Menu::createAlgorithmScreen()
