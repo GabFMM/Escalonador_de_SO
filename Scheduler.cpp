@@ -24,7 +24,7 @@ void Scheduler::addTask(TCB task)
     tasks.push_back(task);
 }
 
-unsigned int Scheduler::getSumDurationTasls()
+unsigned int Scheduler::getSumDurationTasks()
 {
     unsigned int sum = 0;
 

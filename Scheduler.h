@@ -15,5 +15,5 @@ public:
     std::vector<TCB> getTasks();
 
     void addTask(TCB task);
-    unsigned int getSumDurationTasls();
+    unsigned int getSumDurationTasks();
 };
