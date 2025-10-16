@@ -3,6 +3,7 @@
 #include <vector>
 #include <fstream>
 #include <sstream>
+#include <chrono>
 
 #include "Scheduler.h"
 #include "GanttChartGenerator.h"
@@ -20,7 +21,7 @@ private:
     Menu* menu;
     Scheduler* scheduler;
     GanttChartGenerator* imageGenerator;
-    ExtraInfo* extraInfo;
+    ExtraInfo extraInfo;
 
 public:
     Simulator();
@@ -39,4 +40,6 @@ public:
     std::vector<TCB> getTasks() const;
     std::string getAlgorithmScheduler() const;
     unsigned int getQuantum() const;
+
+    unsigned int calcTicksPerSecond();
 };
