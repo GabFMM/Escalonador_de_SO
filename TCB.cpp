@@ -78,3 +78,19 @@ unsigned int TCB::getRemainingTime() const {
 unsigned int TCB::getEndTime() const {
     return endTime;
 }
+
+TCB& TCB::operator=(const TCB &t)
+{
+    if (this != &t) { // evita autoatribuição
+        
+        // Copie aqui os atributos de 't' para 'this'
+        id = t.id;
+        color = t.color;
+        entryTime = t.entryTime;
+        duration = t.duration;
+        priority = t.priority;
+        remainingTime = t.remainingTime;
+        endTime = t.endTime;
+    }
+    return *this; // retorna o objeto atual (por referência)
+}

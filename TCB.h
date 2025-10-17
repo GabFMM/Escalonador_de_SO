@@ -31,4 +31,7 @@ public:
     unsigned int getPriority() const;
     unsigned int getRemainingTime() const;
     unsigned int getEndTime() const;
+
+    // Sobrecarga de operadores
+    TCB& operator=(const TCB& t);
 };

@@ -11,6 +11,8 @@ imageGenerator(nullptr)
 
 Simulator::~Simulator()
 {
+    tasks.clear();
+
     if(menu != nullptr){
         delete menu;
         menu = nullptr;
@@ -35,17 +37,46 @@ void Simulator::start()
 
 void Simulator::executeNoDebugger()
 {
-    // calcular o tick/segundo
-    int tps = calcTicksPerSecond();
+    // ordena as tarefas por ordem de entrada
+    std::sort(tasks.begin(), tasks.end(), 
+        [](const TCB& t1, const TCB& t2){
+            return t1.getEntryTime() < t2.getEntryTime();
+        }
+    );
 
+    // calcula o tick/segundo
+    double tps = calcTicksPerSecond();
+
+    // cria o relogio global
     std::chrono::duration<double> globalClock = std::chrono::seconds(0);
     auto last = std::chrono::steady_clock::now();
 
-    while(globalClock.count() < scheduler->getSumDurationTasks()){ 
+    TCB currentTask;
+
+    // enquanto houver tarefas no simulador (na "memoria")
+    while(tasks.size()){ 
         auto now = std::chrono::steady_clock::now();
 
+        // atualiza relogio
         globalClock += last - now;
         last = now;
+
+        // verifica se o tempo atual corresponde a tarefa que entra por primeiro no escalonador
+        if(globalClock.count() * tps <= tasks[0].getEntryTime()){
+
+            // desenha na imagem o que aconteceu no processador ate agora (interrupcao)
+            // em base na tarefa atual
+            
+
+            // adiciona a tarefa na fila de prontas do escalonador
+            scheduler->addTask(tasks[0]);
+
+            // remove a tarefa da memoria
+            tasks.erase(tasks.begin());
+
+            // "executa" a tarefa no processador
+            currentTask = scheduler->getNextTask();
+        }
     }
 }
 
@@ -69,7 +100,6 @@ std::vector<TCB> Simulator::loadArquive()
     extraInfo.setQuantum(std::stoi(word));
 
     // Consegue as configuracoes das tarefas
-    std::vector<TCB> tasks;
     std::string line;
     while(std::getline(arquive, line)){
         TCB task;
@@ -98,8 +128,6 @@ std::vector<TCB> Simulator::loadArquive()
         tasks.push_back(task);
     }
 
-    scheduler->setTasks(tasks);
-
     arquive.close();
 
     return tasks;
@@ -107,7 +135,7 @@ std::vector<TCB> Simulator::loadArquive()
 
 void Simulator::addTask(TCB task)
 {
-    scheduler->addTask(task);
+    tasks.push_back(task);
 }
 
 void Simulator::setAlgorithmScheduler(int i)
@@ -158,7 +186,7 @@ void Simulator::setAlgorithmScheduler(std::string algorithm)
 
 std::vector<TCB> Simulator::getTasks() const
 {
-    return scheduler->getTasks();
+    return tasks;
 }
 
 std::string Simulator::getAlgorithmScheduler() const
@@ -171,16 +199,14 @@ unsigned int Simulator::getQuantum() const
     return extraInfo.getQuantum();
 }
 
-unsigned int Simulator::calcTicksPerSecond()
+double Simulator::calcTicksPerSecond()
 {
-    std::vector<TCB> tasks = scheduler->getTasks();
-
     unsigned int maxBeginTime = 0;
     size_t tam = tasks.size();
     for(size_t i = 0; i < tam; i++)
         if(tasks[i].getEntryTime() > maxBeginTime)
             maxBeginTime = tasks[i].getEntryTime();
 
-    int durationSimulator = 10; // 10 seconds
-    return (maxBeginTime / durationSimulator);
+    double durationSimulator = 10.f; // 10 seconds
+    return ((double)maxBeginTime / durationSimulator);
 }

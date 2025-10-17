@@ -1,9 +1,10 @@
 #pragma once
 
-#include <vector>
+#include <vector> // TODO: mudar para list, a fim de melhorar eficiencia de tempo
 #include <fstream>
 #include <sstream>
 #include <chrono>
+#include <algorithm>
 
 #include "Scheduler.h"
 #include "GanttChartGenerator.h"
@@ -23,6 +24,8 @@ private:
     GanttChartGenerator* imageGenerator;
     ExtraInfo extraInfo;
 
+    std::vector<TCB> tasks;
+
 public:
     Simulator();
     ~Simulator();
@@ -41,5 +44,5 @@ public:
     std::string getAlgorithmScheduler() const;
     unsigned int getQuantum() const;
 
-    unsigned int calcTicksPerSecond();
+    double calcTicksPerSecond();
 };

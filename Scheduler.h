@@ -15,5 +15,7 @@ public:
     std::vector<TCB> getTasks();
 
     void addTask(TCB task);
-    unsigned int getSumDurationTasks();
+    const bool existTask() const;
+
+    TCB getNextTask() = 0;
 };
