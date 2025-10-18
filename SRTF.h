@@ -5,4 +5,6 @@
 class SRTF : public Scheduler {
 private:
 public:
+
+    TCB getNextTask();
 };

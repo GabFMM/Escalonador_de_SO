@@ -45,4 +45,6 @@ public:
     unsigned int getQuantum() const;
 
     double calcTicksPerSecond();
+    unsigned int sumDurationTasks();
+    std::vector<unsigned int> getIdTasks();
 };

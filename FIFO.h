@@ -5,4 +5,6 @@
 class FIFO : public Scheduler {
 private:
 public:
+
+    TCB getNextTask();
 };

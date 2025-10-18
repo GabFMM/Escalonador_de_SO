@@ -17,5 +17,5 @@ public:
     void addTask(TCB task);
     const bool existTask() const;
 
-    TCB getNextTask() = 0;
+    virtual TCB getNextTask() = 0;
 };

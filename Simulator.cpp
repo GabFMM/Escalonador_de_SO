@@ -37,6 +37,12 @@ void Simulator::start()
 
 void Simulator::executeNoDebugger()
 {
+    // cria o gerador de imagem
+    if(imageGenerator == nullptr)
+        imageGenerator = new GanttChartGenerator(); 
+
+    imageGenerator->createAxis(tasks.size(), getIdTasks(), sumDurationTasks());
+
     // ordena as tarefas por ordem de entrada
     std::sort(tasks.begin(), tasks.end(), 
         [](const TCB& t1, const TCB& t2){
@@ -66,7 +72,7 @@ void Simulator::executeNoDebugger()
 
             // desenha na imagem o que aconteceu no processador ate agora (interrupcao)
             // em base na tarefa atual
-            
+            imageGenerator->addRectTask(currentTask);
 
             // adiciona a tarefa na fila de prontas do escalonador
             scheduler->addTask(tasks[0]);
@@ -209,4 +215,26 @@ double Simulator::calcTicksPerSecond()
 
     double durationSimulator = 10.f; // 10 seconds
     return ((double)maxBeginTime / durationSimulator);
+}
+
+unsigned int Simulator::sumDurationTasks()
+{
+    unsigned int sum = 0;
+
+    size_t tam = tasks.size();
+    for(size_t i = 0; i < tam; i++)
+        sum += tasks[i].getDuration();
+
+    return sum;
+}
+
+std::vector<unsigned int> Simulator::getIdTasks()
+{
+    std::vector<unsigned int> idTasks(tasks.size());
+
+    size_t tam = tasks.size();
+    for(size_t i = 0; i < tam; i++)
+        idTasks[i] = tasks[i].getId();
+
+    return idTasks;
 }

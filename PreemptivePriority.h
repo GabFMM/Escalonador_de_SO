@@ -5,4 +5,6 @@
 class PreemptivePriority : public Scheduler {
 private:
 public:
+
+    TCB getNextTask();
 };
