@@ -32,7 +32,7 @@ public:
     GanttChartGenerator();
     ~GanttChartGenerator();
 
-    void createAxis(size_t numTasks, std::vector<unsigned int> idTasks, unsigned int sumDurationTasks);
+    void createAxis(size_t numTasks, std::vector<unsigned int> idTasks, unsigned int sumDurationTasks, unsigned int maxEntryTime);
 
     void addRectTask(const unsigned int& idTask, const unsigned int& colorTask, unsigned int timeNow, unsigned int timeLastInterrupt);
 

@@ -11,7 +11,7 @@ GanttChartGenerator::~GanttChartGenerator()
 }
 
 // sumDurationTasks deve estar em ticks
-void GanttChartGenerator::createAxis(size_t numTasks, std::vector<unsigned int> idTasks, unsigned int sumDurationTasks)
+void GanttChartGenerator::createAxis(size_t numTasks, std::vector<unsigned int> idTasks, unsigned int sumDurationTasks, unsigned int maxEntryTime)
 {
     // Calcula o tamanho do eixo Y
     // 13 corresponde a altura em pixels do retangulo
@@ -60,7 +60,7 @@ void GanttChartGenerator::createAxis(size_t numTasks, std::vector<unsigned int> 
     // Preenche o ultimo tick execudo no escalonador
     buffer << "\n" <<
         R"(
-        <text x=")" << tamX + 45 << R"(" y=")" << tamY + 60 + 17.5 << R"(" font-size="10" fill="black">)" << sumDurationTasks << R"(</text>)";
+        <text x=")" << tamX + 45 << R"(" y=")" << tamY + 60 + 17.5 << R"(" font-size="10" fill="black">)" << sumDurationTasks + maxEntryTime << R"(</text>)";
 }
 
 // time in ticks
@@ -84,5 +84,5 @@ std::string GanttChartGenerator::toStrColor(const unsigned int &color)
     colors[4] = "magenta";
     colors[5] = "cyan";
 
-    return colors[color];
+    return colors[color - 1];
 }

@@ -41,7 +41,8 @@ void Simulator::executeNoDebugger()
     if(imageGenerator == nullptr)
         imageGenerator = new GanttChartGenerator(); 
 
-    imageGenerator->createAxis(tasks.size(), getIdTasks(), sumDurationTasks());
+    // TO-DO: invés de chamar o getMaxEntryTime com O(n), fazer o createAxis depois de ordenar as tarefas por ordem de chegada
+    imageGenerator->createAxis(tasks.size(), getIdTasks(), sumDurationTasks(), getMaxEntryTime());
 
     // ordena as tarefas por ordem de entrada
     std::sort(tasks.begin(), tasks.end(), 
@@ -58,21 +59,27 @@ void Simulator::executeNoDebugger()
     auto last = std::chrono::steady_clock::now();
 
     TCB currentTask;
+    currentTask.setId(INT_MIN);
+    unsigned int timeLastInterrupt = 0; // in ticks
 
     // enquanto houver tarefas no simulador (na "memoria")
     while(tasks.size()){ 
         auto now = std::chrono::steady_clock::now();
 
         // atualiza relogio
-        globalClock += last - now;
+        globalClock += now - last;
         last = now;
 
         // verifica se o tempo atual corresponde a tarefa que entra por primeiro no escalonador
-        if(globalClock.count() * tps <= tasks[0].getEntryTime()){
+        if(globalClock.count() * tps >= tasks[0].getEntryTime()){
 
-            // desenha na imagem o que aconteceu no processador ate agora (interrupcao)
-            // em base na tarefa atual
-            imageGenerator->addRectTask(currentTask);
+            if(currentTask.getId() != INT_MIN){
+                // desenha na imagem o que aconteceu no processador ate agora (interrupcao)
+                // em base na tarefa atual
+                imageGenerator->addRectTask(currentTask.getId(), currentTask.getColor(), globalClock.count() * tps, timeLastInterrupt);
+            }
+
+            timeLastInterrupt = globalClock.count() * tps;
 
             // adiciona a tarefa na fila de prontas do escalonador
             scheduler->addTask(tasks[0]);
@@ -83,6 +90,13 @@ void Simulator::executeNoDebugger()
             // "executa" a tarefa no processador
             currentTask = scheduler->getNextTask();
         }
+    }
+
+    // Desenha a ultima tarefa
+    if(currentTask.getId() != INT_MIN){
+        // desenha na imagem o que aconteceu no processador ate agora (interrupcao)
+        // em base na tarefa atual
+        imageGenerator->addRectTask(currentTask.getId(), currentTask.getColor(), globalClock.count() * tps, timeLastInterrupt);
     }
 }
 
@@ -237,4 +251,16 @@ std::vector<unsigned int> Simulator::getIdTasks()
         idTasks[i] = tasks[i].getId();
 
     return idTasks;
+}
+
+unsigned int Simulator::getMaxEntryTime()
+{
+    unsigned int max = 0;
+
+    size_t tam = tasks.size();
+    for(size_t i = 0; i < tam; i++)
+        if(max < tasks[i].getEntryTime())
+            max = tasks[i].getEntryTime();
+
+    return max;
 }

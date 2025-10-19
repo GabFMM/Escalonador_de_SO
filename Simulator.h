@@ -5,6 +5,7 @@
 #include <sstream>
 #include <chrono>
 #include <algorithm>
+#include <climits>
 
 #include "Scheduler.h"
 #include "GanttChartGenerator.h"
@@ -47,4 +48,5 @@ public:
     double calcTicksPerSecond();
     unsigned int sumDurationTasks();
     std::vector<unsigned int> getIdTasks();
+    unsigned int getMaxEntryTime();
 };

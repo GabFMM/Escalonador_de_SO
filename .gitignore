@@ -1,2 +1,5 @@
 # compilacao cmake
 build/
+
+# configuracoes vscode
+.vscode/
