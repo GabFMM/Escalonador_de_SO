@@ -69,9 +69,18 @@ void GanttChartGenerator::addRectTask(const unsigned int& idTask, const unsigned
 {
     unsigned int posYId = idPosYTasks[idTask];
 
+    // Cria o retangulo de execucao da tarefa
     buffer << "\n" <<
         R"(
-        <rect x=")" << std::fixed << std::setprecision(2) << timeLastInterrupt * tpp << R"(" y=")" << posYId << R"(" width=")" << std::fixed << std::setprecision(2) << (timeNow * tpp) - (timeLastInterrupt * tpp) << R"(" height=")" << 13 << R"(" fill=")" << toStrColor(colorTask) << R"("></rect>)";
+        <rect x=")" << std::fixed << std::setprecision(2) << timeLastInterrupt * tpp + posAxisX.first << R"(" y=")" << posYId << R"(" width=")" << std::fixed << std::setprecision(2) << (timeNow * tpp) - (timeLastInterrupt * tpp) << R"(" height=")" << 13 << R"(" fill=")" << toStrColor(colorTask) << R"("></rect>)";
+
+    // Coloca os indices de tempos no eixo X
+    buffer << "\n" <<
+        R"(
+        <text x=")" << timeLastInterrupt * tpp + posAxisX.first << R"(" y=")" << posAxisX.second + 17.5 << R"(" font-size="10" fill="black">)" << timeLastInterrupt << R"(</text>)";
+    buffer << "\n" <<
+        R"(
+        <text x=")" << timeNow * tpp + posAxisX.first << R"(" y=")" << posAxisX.second + 17.5 << R"(" font-size="10" fill="black">)" << timeNow << R"(</text>)";
 }
 
 std::string GanttChartGenerator::toStrColor(const unsigned int &color)
