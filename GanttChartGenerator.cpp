@@ -2,27 +2,39 @@
 
 GanttChartGenerator::GanttChartGenerator()
 {
+    idPosYTasks.max_load_factor(0.7f); // Reduz colisões, mas aumenta o custo de memória
 }
 
 GanttChartGenerator::~GanttChartGenerator()
 {
+    idPosYTasks.clear();
 }
 
+// sumDurationTasks deve estar em ticks
 void GanttChartGenerator::createAxis(size_t numTasks, std::vector<unsigned int> idTasks, unsigned int sumDurationTasks)
 {
     // Calcula o tamanho do eixo Y
     // 13 corresponde a altura em pixels do retangulo
     // 2 serve para separar cada retangulo
-    // 1 serve para separar o ultimo retangulo do eixo X
-    size_t tamY = numTasks * 13 * 2 + 1;
+    // +13 serve para separar o ultimo retangulo do eixo X
+    unsigned int tamY = numTasks * 13 * 2 + 13;
+    tamAxisY = tamY;
+    posAxisY.first = 45;
+    posAxisY.second = 60;
 
     // Calcula o eixo X em base de Y
-    size_t tamX = tamY * 1.5;
+    unsigned int tamX = tamY * 1.5;
     if(tamX > 1920)
         tamX = 1920;
+    tamAxisX = tamX;
+    posAxisX.first = 45;
+    posAxisY.second = posAxisY.second + tamAxisY;
+
+    // Define a relacao ticks por pixel
+    tpp = (double)sumDurationTasks / (double)tamAxisX;
 
     // Cria os eixos com os nomes deles
-    axis << "\n" <<
+    buffer << "\n" <<
         R"(
         <text x="15" y="30" font-size="20" fill="black">ID tasks</text>
         <text x="36.5" y="78" font-size="40" fill="black">^</text>
@@ -32,19 +44,45 @@ void GanttChartGenerator::createAxis(size_t numTasks, std::vector<unsigned int> 
         <text x=")" << tamX + 45 - 5 << R"(" y=")" << tamY + 60 + 7.5<< R"(" font-size="20" fill="black">time (ticks)</text>)";
 
     // Preenche o eixo Y com os ID's das tarefas
+    idPosYTasks.reserve(numTasks); // limita o tamanho da tabela hash
     std::sort(idTasks.begin(), idTasks.end());
     for(size_t i = 0; i < numTasks; i++){
-        // tamY + 60 para saber a posicao do canto superior esquerdo do eixo Y
+        // tamY + 60 para saber a posicao do canto inferior esquerdo do eixo Y
         // -13 para "desgrudar" o valor do ID do eixo X 
-        axis << "\n" << R"(<text x="30" y=")" << tamY + 60 - 13 << R"(" font-size="10" fill="black">)" << idTasks[i] << R"(</text>)";
+        unsigned int posId = tamY + 60 - 13 * (i+1);
+
+        buffer << "\n" << R"(<text x="30" y=")" << posId << R"(" font-size="10" fill="black">)" << idTasks[i] << R"(</text>)";
+
+        // guarda a relacao id e posicao
+        idPosYTasks.insert(idTasks[i], posId);
     }
 
     // Preenche o ultimo tick execudo no escalonador
-    axis << "\n" <<
+    buffer << "\n" <<
         R"(
         <text x=")" << tamX + 45 << R"(" y=")" << tamY + 60 + 17.5 << R"(" font-size="10" fill="black">)" << sumDurationTasks << R"(</text>)";
 }
 
-void GanttChartGenerator::addRectTask(TCB &task)
+// time in ticks
+// timeLastInterrupt se refere a interrupcao do escalonador, nao da tarefa
+void GanttChartGenerator::addRectTask(const unsigned int& idTask, const unsigned int& colorTask, unsigned int timeNow, unsigned int timeLastInterrupt)
 {
+    unsigned int posYId = idPosYTasks[idTask];
+
+    buffer << "\n" <<
+        R"(
+        <rect x=")" << std::fixed << std::setprecision(2) << timeLastInterrupt * tpp << R"(" y=")" << posYId << R"(" width=")" << std::fixed << std::setprecision(2) << (timeNow * tpp) - (timeLastInterrupt * tpp) << R"(" height=")" << 13 << R"(" fill=")" << toStrColor(colorTask) << R"("></rect>)";
+}
+
+std::string GanttChartGenerator::toStrColor(const unsigned int &color)
+{
+    std::string colors[6];
+    colors[0] = "red";
+    colors[1] = "green";
+    colors[2] = "yellow";
+    colors[3] = "blue";
+    colors[4] = "magenta";
+    colors[5] = "cyan";
+
+    return colors[color];
 }

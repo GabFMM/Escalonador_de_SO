@@ -52,7 +52,6 @@ const std::string Menu::colorText = R"(
     4 -> Azul
     5 -> Magenta
     6 -> Ciano
-    7 -> Branco
 
     Digite a opcao (o numero) desejada:
 )";
@@ -198,7 +197,7 @@ void Menu::createTaskScreen()
         std::cout << "\nID da tarefa: " << numTasks << std::endl;
         std::cout << colorText << std::endl;
 
-        task.setColor(checkEntryNumber(1, 7));
+        task.setColor(checkEntryNumber(1, 6));
 
         std::cout << "\nDigite o instante do tempo que a tarefa entra no simulador:" << std::endl;
         std::cin >> num;
