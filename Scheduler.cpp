@@ -55,12 +55,24 @@ TCB Scheduler::getNextTask()
         break;
     
     case Algorithm::PRIOp:
-        return getNextTaskPrioP();
+        return getNextTaskPRIOp();
         break;
     }
+
+    return TCB();
 }
 
 TCB Scheduler::getNextTaskFIFO()
 {
     return readyTasks[0];
+}
+
+TCB Scheduler::getNextTaskSRTF()
+{
+    return TCB();
+}
+
+TCB Scheduler::getNextTaskPRIOp()
+{
+    return TCB();
 }

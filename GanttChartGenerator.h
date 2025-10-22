@@ -1,18 +1,18 @@
 #pragma once
 
-#include <ostream>
+#include <fstream>
 #include <sstream>
 #include <vector>
 #include <algorithm>
 #include <unordered_map>
 #include <iomanip>
 #include <string>
+#include <iostream>
 
 #include "TCB.h"
 
 class GanttChartGenerator{
 private:
-    std::ofstream imageSVG;
     std::ostringstream buffer; // o buffer nao inclui o cabecalho padrao do svg
 
     // first eh a coordenada X, second eh a coordenada Y
@@ -37,4 +37,6 @@ public:
     void addRectTask(const unsigned int& idTask, const unsigned int& colorTask, unsigned int timeNow, unsigned int timeLastInterrupt);
 
     std::string toStrColor(const unsigned int& color);
+
+    void generateImage();
 };

@@ -54,7 +54,7 @@ void GanttChartGenerator::createAxis(size_t numTasks, std::vector<unsigned int> 
         buffer << "\n" << R"(<text x="30" y=")" << posId << R"(" font-size="10" fill="black">)" << idTasks[i] << R"(</text>)";
 
         // guarda a relacao id e posicao
-        idPosYTasks.insert(idTasks[i], posId);
+        idPosYTasks.insert({idTasks[i], posId});
     }
 
     // Preenche o ultimo tick execudo no escalonador
@@ -95,4 +95,26 @@ std::string GanttChartGenerator::toStrColor(const unsigned int &color)
     colors[5] = "cyan";
 
     return colors[color - 1];
+}
+
+void GanttChartGenerator::generateImage()
+{
+    std::ofstream arquive("image.svg");
+
+    if (!arquive.is_open()) {
+        std::cerr << "Erro ao abrir o arquivo SVG.\n";
+        return;
+    }
+
+    // cabecalho
+    arquive << R"(<?xml version="1.0" encoding="UTF-8"?>)" << '\n';
+    arquive << R"(<svg xmlns="http://www.w3.org/2000/svg" width=")" << tamAxisX + posAxisX.first + 50 << R"(" height=")" << tamAxisY + posAxisY.second + 50 << R"(">)" << '\n';
+
+    // miolo
+    arquive << buffer.str();
+
+    // fim
+    arquive << "</svg>\n";
+
+    arquive.close();
 }

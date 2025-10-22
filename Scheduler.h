@@ -29,5 +29,5 @@ public:
     TCB getNextTask();
     TCB getNextTaskFIFO();
     TCB getNextTaskSRTF();
-    TCB getNextTaskPrioP();
+    TCB getNextTaskPRIOp();
 };

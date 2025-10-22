@@ -1,10 +1,8 @@
-//
-// Created by eduol on 22/09/2025.
-//
-
-#include <iostream>
+#include "Simulator.h"
 
 int main() {
-    std::cout << "Hello World!" << std::endl;
+    Simulator simulator;
+    simulator.start();
+
     return 0;
 }

@@ -35,6 +35,10 @@ void Simulator::start()
     menu->execute();
 }
 
+void Simulator::executeDebugger()
+{
+}
+
 void Simulator::executeNoDebugger()
 {
     // cria o gerador de imagem
@@ -119,6 +123,8 @@ void Simulator::executeNoDebugger()
         // em base na tarefa atual
         imageGenerator->addRectTask(currentTask.getId(), currentTask.getColor(), globalClock.count() * tps, timeLastInterrupt);
     }
+
+    generateImage();
 }
 
 std::vector<TCB> Simulator::loadArquive()
@@ -172,6 +178,10 @@ std::vector<TCB> Simulator::loadArquive()
     arquive.close();
 
     return tasks;
+}
+
+void Simulator::generateImage()
+{
 }
 
 void Simulator::addTask(TCB task)
