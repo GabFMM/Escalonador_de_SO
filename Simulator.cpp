@@ -70,9 +70,11 @@ void Simulator::executeNoDebugger()
         globalClock += now - last;
         last = now;
 
-        // verifica se o tempo atual corresponde a tarefa que entra por primeiro no escalonador
-        if(globalClock.count() * tps >= tasks[0].getEntryTime()){
+        // verifica se o tempo atual corresponde a alguma tarefa que pode entrar no escalonador
+        unsigned int indexTask = 0;
+        if(canAnyTaskEnter(globalClock.count() * tps, &indexTask)){
 
+            // ignora a primeira interrupcao
             if(currentTask.getId() != INT_MIN){
                 // desenha na imagem o que aconteceu no processador ate agora (interrupcao)
                 // em base na tarefa atual
@@ -82,13 +84,32 @@ void Simulator::executeNoDebugger()
             timeLastInterrupt = globalClock.count() * tps;
 
             // adiciona a tarefa na fila de prontas do escalonador
-            scheduler->addTask(tasks[0]);
-
-            // remove a tarefa da memoria
-            tasks.erase(tasks.begin());
+            scheduler->addTask(tasks[indexTask]);
 
             // "executa" a tarefa no processador
             currentTask = scheduler->getNextTask();
+        }
+
+        // Verifica se o tempo restante da tarefa executada acabou 
+        if(currentTask.getId() != INT_MIN){
+            currentTask.setRemainingTime(currentTask.getDuration() - (globalClock.count() * tps - currentTask.getEntryTime()));
+
+            if(currentTask.getRemainingTime() <= 0){
+                // desenha na imagem o que aconteceu no processador ate agora (interrupcao)
+                // em base na tarefa atual
+                imageGenerator->addRectTask(currentTask.getId(), currentTask.getColor(), globalClock.count() * tps, timeLastInterrupt);
+
+                timeLastInterrupt = globalClock.count() * tps;
+
+                // remove a tarefa na fila de prontas do simulator
+                removeTask(currentTask.getId());
+
+                // remove a tarefa na fila de prontas do escalonador
+                scheduler->removeTask(currentTask.getId());
+
+                // "executa" outra tarefa no processador
+                currentTask = scheduler->getNextTask();
+            }
         }
     }
 
@@ -158,28 +179,30 @@ void Simulator::addTask(TCB task)
     tasks.push_back(task);
 }
 
+void Simulator::removeTask(unsigned int idTask)
+{
+    std::vector<TCB>::iterator it;
+    for(it = tasks.begin(); it->getId() == idTask; it++);
+    
+    tasks.erase(it);
+}
+
 void Simulator::setAlgorithmScheduler(int i)
 {
     if(i == 1){
         extraInfo.setAlgorithmScheduler("FIFO");
 
-        FIFO* algo = new FIFO();
-
-        scheduler = static_cast<Scheduler*>(algo);
+        scheduler->setAlgorithm(Scheduler::Algorithm::FIFO);
     }
     else if(i == 2){
         extraInfo.setAlgorithmScheduler("SRTF");
 
-        SRTF* algo = new SRTF();
-
-        scheduler = static_cast<Scheduler*>(algo);
+        scheduler->setAlgorithm(Scheduler::Algorithm::SRTF);
     }
     else if(i == 3){
         extraInfo.setAlgorithmScheduler("PRIOp");
 
-        PreemptivePriority* algo = new PreemptivePriority();
-
-        scheduler = static_cast<Scheduler*>(algo);
+        scheduler->setAlgorithm(Scheduler::Algorithm::PRIOp);
     }
 }
 
@@ -187,21 +210,12 @@ void Simulator::setAlgorithmScheduler(std::string algorithm)
 {
     extraInfo.setAlgorithmScheduler(algorithm);
 
-    if(algorithm == "FIFO"){
-        FIFO* algo = new FIFO();
-
-        scheduler = static_cast<Scheduler*>(algo);
-    }
-    else if(algorithm == "SRTF"){
-        SRTF* algo = new SRTF();
-
-        scheduler = static_cast<Scheduler*>(algo);
-    }
-    else if(algorithm == "PRIOp"){
-        PreemptivePriority* algo = new PreemptivePriority();
-
-        scheduler = static_cast<Scheduler*>(algo);
-    }
+    if(algorithm == "FIFO")
+        scheduler->setAlgorithm(Scheduler::Algorithm::FIFO);
+    else if(algorithm == "SRTF")
+        scheduler->setAlgorithm(Scheduler::Algorithm::SRTF);
+    else if(algorithm == "PRIOp")
+        scheduler->setAlgorithm(Scheduler::Algorithm::PRIOp);
 }
 
 std::vector<TCB> Simulator::getTasks() const
@@ -263,4 +277,18 @@ unsigned int Simulator::getMaxEntryTime()
             max = tasks[i].getEntryTime();
 
     return max;
+}
+
+// timeNow em ticks
+const bool Simulator::canAnyTaskEnter(double timeNow, unsigned int* numTask)
+{
+    size_t tam = tasks.size();
+    for(size_t i = 0; i < tam; i++){
+        if(timeNow >= tasks[i].getEntryTime()){
+            (*numTask) = i;
+            return true;
+        }
+    }
+    
+    return false;
 }

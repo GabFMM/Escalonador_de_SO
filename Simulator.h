@@ -11,9 +11,6 @@
 #include "GanttChartGenerator.h"
 #include "TCB.h"
 #include "ExtraInfo.h"
-#include "FIFO.h"
-#include "SRTF.h"
-#include "PreemptivePriority.h"
 
 class Menu;
 
@@ -36,9 +33,11 @@ public:
     void executeNoDebugger();
     std::vector<TCB> loadArquive();
     void generateImage();
-    void addTask(TCB task);
 
-    void setAlgorithmScheduler(int i); // Usado em Menu.cpp
+    void addTask(TCB task);
+    void removeTask(unsigned int idTask);
+
+    void setAlgorithmScheduler(int i); // Usado por Menu.cpp
     void setAlgorithmScheduler(std::string algorithm);
 
     std::vector<TCB> getTasks() const;
@@ -49,4 +48,6 @@ public:
     unsigned int sumDurationTasks();
     std::vector<unsigned int> getIdTasks();
     unsigned int getMaxEntryTime();
+
+    const bool canAnyTaskEnter(double timeNow, unsigned int* numTask);
 };
