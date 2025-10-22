@@ -2,58 +2,63 @@
 #include "Simulator.h"
 
 const std::string Menu::inicialText = R"(
-    Welcome to scheduler simulator!
+Welcome to scheduler simulator!
  
-    Clique em qualquer tecla para comecar.
+Clique em qualquer tecla para comecar.
 )";
 
 const std::string Menu::arquiveText = R"(
-    Carregar arquivo texto?
+Carregar arquivo texto?
 
-    Para comecar, eh necessario configurar o simulador, para isso, escolha uma das opcoes abaixo:
+Para comecar, eh necessario configurar o simulador, para isso, escolha uma das opcoes abaixo:
 
-    1 -> Carregar a partir do arquivo plain.txt
-    2 -> Configurar do zero
+1 -> Carregar a partir do arquivo plain.txt
+2 -> Configurar do zero
 
-    Digite a opcao (o numero) desejada:
+Digite a opcao (o numero) desejada:
 )";
 
 const std::string Menu::chosenModeText = R"(
-    Escolha o modo de execucao:
+Escolha o modo de execucao:
 
-    1 -> Passo a passo (Debugger)
-    2 -> Direto
+1 -> Passo a passo (Debugger)
+2 -> Direto
 
-    Digite a opcao (o numero) desejada:
+Digite a opcao (o numero) desejada:
 )";
 
 const std::string Menu::algorithmText = R"(
-    Escolha um algoritmo para o escalonador:
+Escolha um algoritmo para o escalonador:
 
-    1 -> FIFO (First In First Out)
-    2 -> SRTF (Shortest Remaining Time First)
-    3 -> PRIOp (Prioridade preemptiva)
+1 -> FIFO (First In First Out)
+2 -> SRTF (Shortest Remaining Time First)
+3 -> PRIOp (Prioridade preemptiva)
 
-    Digite a opcao (o numero) desejada:
+Digite a opcao (o numero) desejada:
 )";
 
 const std::string Menu::taskText = R"(
-    Criar nova tarefa?
+Criar nova tarefa?
     
-    Numero minimo de tarefas para funcionar o simulador: 1
+Numero minimo de tarefas para funcionar o simulador: 1
 )";
 
 const std::string Menu::colorText = R"(
-    Selecione a cor da nova tarefa:
+Selecione a cor da nova tarefa:
 
-    1 -> Vermelho
-    2 -> Verde
-    3 -> Amarelo
-    4 -> Azul
-    5 -> Magenta
-    6 -> Ciano
+1 -> Vermelho
+2 -> Verde
+3 -> Amarelo
+4 -> Azul
+5 -> Magenta
+6 -> Ciano
 
-    Digite a opcao (o numero) desejada:
+Digite a opcao (o numero) desejada:
+)";
+
+const std::string Menu::quantumText = R"(
+Qual o valor do quantum? 
+Mínimo 0, máximo 4294967294
 )";
 
 Menu::Menu() : simulator(nullptr)
@@ -101,6 +106,7 @@ void Menu::createArquiveScreen()
     }
     else if(option == 2){
         createAlgorithmScreen();
+        createQuantumScreen();
         createTaskScreen();
         createConfirmationScreen(simulator->getTasks());
     }
@@ -108,7 +114,7 @@ void Menu::createArquiveScreen()
     clearTerminal();
 }
 
-void Menu::createConfirmationScreen(std::vector<TCB> tasks)
+void Menu::createConfirmationScreen(const std::vector<TCB> tasks)
 {
     clearTerminal();
 
@@ -131,7 +137,10 @@ void Menu::createConfirmationScreen(std::vector<TCB> tasks)
         std::endl;
     }
 
+    std::flush(std::cout);
+
     std::cout << "Pressione qualquer tecla para executar o simulador." << std::endl;
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // limpa o buffer do cout
     std::cin.get();
 
     clearTerminal();
@@ -187,7 +196,20 @@ void Menu::createTaskScreen()
 
         option = checkEntryString(targets);
 
-        if(option == "N" || option == "n") break;
+        if(option == "N" || option == "n"){
+            if(numTasks == 0){
+                option = "Y";
+
+                std::cout << "\nNao eh possivel iniciar o simulador com 0 (zero) tarefas.\n" << std::endl;
+                std::cin.get();
+                
+                clearTerminal();
+                continue;
+            }
+            else{
+                break;
+            }
+        };
 
         TCB task;
         int num;
@@ -223,6 +245,17 @@ void Menu::createTaskScreen()
     clearTerminal();
 }
 
+void Menu::createQuantumScreen()
+{
+    clearTerminal();
+
+    std::cout << quantumText << std::endl;
+
+    simulator->setQuantum(checkEntryNumber((unsigned int)0, (unsigned int)4294967294));
+
+    clearTerminal();
+}
+
 // Dada uma sequencia de opcoes, verifica se a entrada do usuario eh valida,
 // e retorna a opcao escolhida
 int Menu::checkEntryNumber(int firstOption, int lastOption)
@@ -236,6 +269,21 @@ int Menu::checkEntryNumber(int firstOption, int lastOption)
     }
 
     return option;
+}
+
+// Dada um intervalo de numeros, verifica se a entrada do usuario eh valida,
+// e retorna o numero escolhido
+unsigned int Menu::checkEntryNumber(unsigned int firstNumber, unsigned int lastOption)
+{
+    unsigned int num;
+    std::cin >> num;
+
+    while(num < firstNumber || num > lastOption){
+        std::cout << "\nNumero invalido. Tente novamente.\n" << std::endl;
+        std::cin >> num;
+    }
+
+    return num;
 }
 
 // Dada um conjunto de strings desejadas, verifica se a entrada do usuario eh valida
@@ -263,4 +311,10 @@ void Menu::clearTerminal()
 #else
 	system("clear");  // Linux/macOS
 #endif
+}
+
+void Menu::setSimulator(Simulator *s)
+{
+    if(s != nullptr)
+        simulator = s;
 }

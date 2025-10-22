@@ -3,7 +3,6 @@
 #include <vector> // TODO: mudar para list, a fim de melhorar eficiencia de tempo
 #include <fstream>
 #include <sstream>
-#include <chrono>
 #include <algorithm>
 #include <climits>
 
@@ -40,6 +39,8 @@ public:
     void setAlgorithmScheduler(int i); // Usado por Menu.cpp
     void setAlgorithmScheduler(std::string algorithm);
 
+    void setQuantum(unsigned int q);
+
     std::vector<TCB> getTasks() const;
     std::string getAlgorithmScheduler() const;
     unsigned int getQuantum() const;
@@ -49,5 +50,5 @@ public:
     std::vector<unsigned int> getIdTasks();
     unsigned int getMaxEntryTime();
 
-    const bool canAnyTaskEnter(double timeNow, unsigned int* numTask);
+    const bool canAnyTaskEnter(double timeNow, unsigned int* indexTask, const unsigned int& exceptionIdTask);
 };

@@ -26,3 +26,6 @@ add_executable(Scheduler
 	TCB.cpp
 	TCB.h
 )
+
+# Build type padrão: Debug
+set(CMAKE_BUILD_TYPE Debug)

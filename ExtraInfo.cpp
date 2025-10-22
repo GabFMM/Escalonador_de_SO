@@ -1,6 +1,6 @@
 #include "ExtraInfo.h"
 
-ExtraInfo::ExtraInfo() : quantum(0)
+ExtraInfo::ExtraInfo() : quantum(0), algorithmScheduler("")
 {
     algorithmScheduler.clear();
 }
@@ -13,7 +13,7 @@ ExtraInfo::~ExtraInfo()
 
 void ExtraInfo::setAlgorithmScheduler(std::string algorithm)
 {
-    algorithmScheduler = algorithm;
+    algorithmScheduler.append(algorithm);
 }
 
 void ExtraInfo::setQuantum(unsigned int quantum)
