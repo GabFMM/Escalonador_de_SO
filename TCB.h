@@ -2,7 +2,7 @@
 
 class TCB{
 private:
-    int id;
+    unsigned int id;
     int color;
     unsigned int entryTime;
     unsigned int duration;

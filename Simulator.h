@@ -51,4 +51,7 @@ public:
     unsigned int getMaxEntryTime();
 
     const bool canAnyTaskEnter(double timeNow, unsigned int* indexTask, const unsigned int& exceptionIdTask);
+
+    void trim(std::string &s);
+    void remove_cr(std::string &s);
 };

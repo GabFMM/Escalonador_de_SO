@@ -64,26 +64,23 @@ void Simulator::executeNoDebugger()
     double tps = calcTicksPerSecond();
 
     // cria o relogio global simulado
-    const double deltaTime = 1.0 / tps;
+    const double deltaTime = 1.0;
     double globalClock = 0.0;
 
     // enquanto houver tarefas no simulador (na "memoria")
     while(tasks.size()){ 
-        // atualiza relogio
-        globalClock += deltaTime;
-
         // verifica se o tempo atual corresponde a alguma tarefa que pode entrar no escalonador
         unsigned int indexTask = 0;
-        if(canAnyTaskEnter(globalClock * tps, &indexTask, currentTask.getId())){
+        if(canAnyTaskEnter(globalClock, &indexTask, currentTask.getId())){
 
             // ignora a primeira interrupcao
             if(currentTask.getId() != INT_MIN){
                 // desenha na imagem o que aconteceu no processador ate agora (interrupcao)
                 // em base na tarefa atual
-                imageGenerator->addRectTask(currentTask.getId(), currentTask.getColor(), globalClock * tps, timeLastInterrupt);
+                imageGenerator->addRectTask(currentTask.getId(), currentTask.getColor(), globalClock, timeLastInterrupt);
             }
 
-            timeLastInterrupt = globalClock * tps;
+            timeLastInterrupt = globalClock;
 
             // adiciona a tarefa na fila de prontas do escalonador
             scheduler->addTask(tasks[indexTask]);
@@ -94,14 +91,14 @@ void Simulator::executeNoDebugger()
 
         // Verifica se o tempo restante da tarefa executada acabou 
         if(currentTask.getId() != INT_MIN){
-            currentTask.setRemainingTime(currentTask.getDuration() - (globalClock * tps - currentTask.getEntryTime()));
+            currentTask.setRemainingTime(currentTask.getDuration() - (globalClock - currentTask.getEntryTime()));
 
             if(currentTask.getRemainingTime() <= 0){
                 // desenha na imagem o que aconteceu no processador ate agora (interrupcao)
                 // em base na tarefa atual
-                imageGenerator->addRectTask(currentTask.getId(), currentTask.getColor(), globalClock * tps, timeLastInterrupt);
+                imageGenerator->addRectTask(currentTask.getId(), currentTask.getColor(), globalClock, timeLastInterrupt);
 
-                timeLastInterrupt = globalClock * tps;
+                timeLastInterrupt = globalClock;
 
                 // remove a tarefa na fila de prontas do simulator
                 removeTask(currentTask.getId());
@@ -113,61 +110,158 @@ void Simulator::executeNoDebugger()
                 currentTask = scheduler->getNextTask();
             }
         }
+        // atualiza relogio
+        globalClock += deltaTime;
     }
 
     generateImage();
 }
 
-std::vector<TCB> Simulator::loadArquive()
-{
-    std::ifstream arquive("assets/configuration.txt");
+// função auxiliar para trim (remove espaços no início e no fim)
+void Simulator::trim(std::string &s) {
+    // remove espaços à esquerda
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(),
+        [](unsigned char ch){ return !std::isspace(ch); }));
+    // remove espaços à direita
+    s.erase(std::find_if(s.rbegin(), s.rend(),
+        [](unsigned char ch){ return !std::isspace(ch); }).base(), s.end());
+}
 
-    if (!arquive.is_open()) {
-        std::cerr << "Error for open arquive configuration" << std::endl;
+// função para remover todos os '\r' (útil para arquivos Windows)
+void Simulator::remove_cr(std::string &s) {
+    s.erase(std::remove(s.begin(), s.end(), '\r'), s.end());
+}
+
+std::vector<TCB> Simulator::loadArquive() {
+    std::ifstream file("../assets/configuration.txt");
+    
+    if (!file.is_open()) {
+        std::cerr << "Error opening configuration file" << std::endl;
         return std::vector<TCB>();
     }
 
-    // Consegue o algoritmo
-    std::string word;
-    std::getline(arquive, word, ';');
-
-    setAlgorithmScheduler(word);
-
-    // Consegue o quantum
-    std::getline(arquive, word, ';');
-    extraInfo.setQuantum(std::stoi(word));
-
-    // Consegue as configuracoes das tarefas
     std::string line;
-    while(std::getline(arquive, line)){
+
+    // 1) Ler primeira linha inteira: algoritmo;quantum
+    if (!std::getline(file, line)) {
+        std::cerr << "Configuration file is empty" << std::endl;
+        return std::vector<TCB>();
+    }
+    
+    remove_cr(line);
+    trim(line);
+    if (line.empty()) {
+        std::cerr << "First line is empty" << std::endl;
+        return std::vector<TCB>();
+    }
+
+    // parse da primeira linha
+    std::istringstream ss(line);
+    std::string alg;
+    std::string quantumStr;
+
+    if (!std::getline(ss, alg, ';')) {
+        std::cerr << "Malformed first line: missing algorithm" << std::endl;
+        return std::vector<TCB>();
+    }
+    remove_cr(alg);
+    trim(alg);
+    setAlgorithmScheduler(alg);
+
+    if (!std::getline(ss, quantumStr, ';')) {
+        // tentar sem delimitador adicional (se não houver ';' depois)
+        // neste caso quantumStr já foi lido como resto da linha por getline com '\n'
+        // mas getline com ';' retorna false se não há ';'
+        ss.clear();
+        ss.seekg(0);
+        // alternativa: ler o resto da stream
+        ss.str(line); // reatribui
+        // consumir até o ';' novamente
+        size_t pos = line.find(';');
+        if (pos != std::string::npos && pos + 1 < line.size()) {
+            quantumStr = line.substr(pos + 1);
+        } else {
+            std::cerr << "Malformed first line: missing quantum" << std::endl;
+            return std::vector<TCB>();
+        }
+    }
+    remove_cr(quantumStr);
+    trim(quantumStr);
+    if (quantumStr.empty()) {
+        std::cerr << "Quantum empty in configuration" << std::endl;
+        return std::vector<TCB>();
+    }
+    try {
+        extraInfo.setQuantum(std::stoi(quantumStr));
+    } catch (const std::exception &e) {
+        std::cerr << "Invalid quantum value: '" << quantumStr << "'" << std::endl;
+        return std::vector<TCB>();
+    }
+
+    // 2) Ler o resto das linhas — cada linha é uma tarefa no formato:
+    // id;color;entry;duration;priority
+    while (std::getline(file, line)) {
+        remove_cr(line);
+        trim(line);
+        if (line.empty()) continue; // pula linhas em branco
+
+        std::istringstream ls(line);
+        std::string field;
         TCB task;
-        std::istringstream lineStream(line);
 
-        // Consegue o ID
-        std::getline(lineStream, word, ';');
-        task.setId(std::stoi(word));
+        auto safeGetInt = [&](int &out) -> bool {
+            if (!std::getline(ls, field, ';')) return false;
+            remove_cr(field);
+            trim(field);
+            if (field.empty()) return false;
+            try {
+                out = std::stoi(field);
+                return true;
+            } catch (const std::exception &e) {
+                return false;
+            }
+        };
 
-        // Consegue a cor
-        std::getline(lineStream, word, ';');
-        task.setColor(std::stoi(word));
-
-        // Consegue o instante de ingresso
-        std::getline(lineStream, word, ';');
-        task.setEntryTime(std::stoi(word));
-
-        // Consegue a duracao
-        std::getline(lineStream, word, ';');
-        task.setDuration(std::stoi(word));
-
-        // Consegue a prioridade
-        std::getline(lineStream, word, ';');
-        task.setPriority(std::stoi(word));
+        int tmp;
+        // ID
+        if (!safeGetInt(tmp)) { 
+            std::cerr << "Bad or missing ID in line: " << line << std::endl; 
+            continue; 
+        }
+        task.setId(tmp);
+        
+        // Color
+        if (!safeGetInt(tmp)) { 
+            std::cerr << "Bad or missing Color in line: " << line << std::endl; 
+            continue; 
+        }
+        task.setColor(tmp);
+        
+        // Entry time
+        if (!safeGetInt(tmp)) { 
+            std::cerr << "Bad or missing EntryTime in line: " << line << std::endl; 
+            continue; 
+        }
+        task.setEntryTime(tmp);
+        
+        // Duration
+        if (!safeGetInt(tmp)) { 
+            std::cerr << "Bad or missing Duration in line: " << line << std::endl; 
+            continue; 
+        }
+        task.setDuration(tmp);
+        
+        // Priority
+        if (!safeGetInt(tmp)) { 
+            std::cerr << "Bad or missing Priority in line: " << line << std::endl; 
+            continue; 
+        }
+        task.setPriority(tmp);
 
         tasks.push_back(task);
     }
 
-    arquive.close();
-
+    file.close();
     return tasks;
 }
 
@@ -184,7 +278,7 @@ void Simulator::addTask(TCB task)
 void Simulator::removeTask(unsigned int idTask)
 {
     std::vector<TCB>::iterator it;
-    for(it = tasks.begin(); it->getId() == idTask; it++);
+    for(it = tasks.begin(); it->getId() != idTask; it++);
     
     tasks.erase(it);
 }
@@ -214,6 +308,9 @@ void Simulator::setAlgorithmScheduler(int i)
 void Simulator::setAlgorithmScheduler(std::string algorithm)
 {
     extraInfo.setAlgorithmScheduler(algorithm);
+
+    if(scheduler == nullptr)
+        scheduler = new Scheduler();
 
     if(algorithm == "FIFO")
         scheduler->setAlgorithm(Scheduler::Algorithm::FIFO);

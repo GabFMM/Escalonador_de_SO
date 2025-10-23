@@ -28,20 +28,20 @@ void GanttChartGenerator::createAxis(size_t numTasks, std::vector<unsigned int> 
         tamX = 1920;
     tamAxisX = tamX;
     posAxisX.first = 45;
-    posAxisY.second = posAxisY.second + tamAxisY;
+    posAxisX.second = posAxisY.second + tamAxisY;
 
     // Define a relacao ticks por pixel
-    tpp = (double)sumDurationTasks / (double)tamAxisX;
+    tpp = (double)tamAxisX / ((double)sumDurationTasks + (double)maxEntryTime);
 
     // Cria os eixos com os nomes deles
-    buffer << "\n" <<
+    buffer << "\n" << 
         R"(
         <text x="15" y="30" font-size="20" fill="black">ID tasks</text>
         <text x="36.5" y="78" font-size="40" fill="black">^</text>
         <rect x="45" y="60" width="2" height=")" << tamY << R"(" fill="black"></rect>
         <rect x="45" y=")" << tamY + 60 << R"(" width=")" << tamX << R"(" height="2" fill="black"></rect>
         <text x=")" << tamX + 45 - 5 << R"(" y=")" << tamY + 60 + 11<< R"(" font-size="30" fill="black">></text>
-        <text x=")" << tamX + 45 - 5 << R"(" y=")" << tamY + 60 + 7.5<< R"(" font-size="20" fill="black">time (ticks)</text>)";
+        <text x=")" << tamX + 60 << R"(" y=")" << tamY + 60 + 7.5<< R"(" font-size="20" fill="black">time (ticks)</text>)";
 
     // Preenche o eixo Y com os ID's das tarefas
     idPosYTasks.reserve(numTasks); // limita o tamanho da tabela hash
@@ -72,7 +72,7 @@ void GanttChartGenerator::addRectTask(const unsigned int& idTask, const unsigned
     // Cria o retangulo de execucao da tarefa
     buffer << "\n" <<
         R"(
-        <rect x=")" << std::fixed << std::setprecision(2) << timeLastInterrupt * tpp + posAxisX.first << R"(" y=")" << posYId << R"(" width=")" << std::fixed << std::setprecision(2) << (timeNow * tpp) - (timeLastInterrupt * tpp) << R"(" height=")" << 13 << R"(" fill=")" << toStrColor(colorTask) << R"("></rect>)";
+        <rect x=")" << std::fixed << std::setprecision(2) << timeLastInterrupt * tpp + posAxisX.first + 2 << R"(" y=")" << posYId - 10 << R"(" width=")" << std::fixed << std::setprecision(2) << (timeNow * tpp) - (timeLastInterrupt * tpp) - 2 << R"(" height=")" << 13 << R"(" fill=")" << toStrColor(colorTask) << R"("></rect>)";
 
     // Coloca os indices de tempos no eixo X
     buffer << "\n" << // indice de inicio de tarefa
@@ -108,7 +108,7 @@ void GanttChartGenerator::generateImage()
 
     // cabecalho
     arquive << R"(<?xml version="1.0" encoding="UTF-8"?>)" << '\n';
-    arquive << R"(<svg xmlns="http://www.w3.org/2000/svg" width=")" << tamAxisX + posAxisX.first + 50 << R"(" height=")" << tamAxisY + posAxisY.second + 50 << R"(">)" << '\n';
+    arquive << R"(<svg xmlns="http://www.w3.org/2000/svg" width=")" << tamAxisX + posAxisX.first + 120 << R"(" height=")" << tamAxisY + posAxisY.second + 50 << R"(">)" << '\n';
 
     // miolo
     arquive << buffer.str();

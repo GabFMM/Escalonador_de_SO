@@ -32,7 +32,7 @@ void Scheduler::addTask(TCB task)
 void Scheduler::removeTask(unsigned int idTask)
 {
     std::vector<TCB>::iterator it;
-    for(it = readyTasks.begin(); it->getId() == idTask; it++);
+    for(it = readyTasks.begin(); it->getId() != idTask; it++);
     
     readyTasks.erase(it);
 }

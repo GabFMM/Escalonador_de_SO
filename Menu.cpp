@@ -66,10 +66,7 @@ Menu::Menu() : simulator(nullptr)
 }
 
 Menu::~Menu(){
-    if(simulator != nullptr){
-        delete simulator;
-        simulator = nullptr;
-    }
+    simulator = nullptr;
 }
 
 void Menu::execute()
