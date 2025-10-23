@@ -1,5 +1,15 @@
 # compilacao cmake
-build/
+build/CmakeFiles/
+build/cmake_install.cmake
+build/CMakeCache
+build/MakeFile
 
 # configuracoes vscode
 .vscode/
+
+# executaveis
+build/Scheduler.exe
+build/Scheduler
+
+# outros
+build/image.svg
