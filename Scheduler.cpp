@@ -51,7 +51,9 @@ void Scheduler::addTask(TCB task)
         break;
     
     case Algorithm::PRIOp:
-        
+        readyTasks.push_back(task);
+        // Ordena por maior prioridade
+        std::sort(readyTasks.begin(), readyTasks.end(), [](const TCB& a, const TCB& b){return a.getPriority() > b.getPriority();});
         break;
     }
     
