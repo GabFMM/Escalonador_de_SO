@@ -318,10 +318,10 @@ void Simulator::chosenMode(const std::vector<TCB*>& pTasks, const int& currentId
     showMinimumInfo(currentIdTask, globalClock);
 
     std::cout << 
-        "Digite o numero da opcao desejada:\n\n" <<
-        "1. Ver todas as informacoes de cada tarefa;\n" <<
-        "2. Ver as informacoes das tarefas na fila de prontas, e as informacoes da tarefa executada;\n" <<
-        "3. Prosseguir para o instante de tempo seguinte;\n" <<
+        "Enter the number of the desired option:\n\n" <<
+        "1. See all information for each task;\n" <<
+        "2. View information about tasks in the ready queue, and information about the executed task;\n" <<
+        "3. Proceed to the next instant of time;\n" <<
     std::endl;
 
     int option = menu->checkEntryNumber(1, 3);
@@ -338,7 +338,7 @@ void Simulator::chosenMode(const std::vector<TCB*>& pTasks, const int& currentId
 
 void Simulator::showMinimumInfo(const int& currentIdTask, const unsigned int& globalClock)
 {
-    std::cout << "Instante de tempo atual: " << globalClock << "\n" << "Id da tarefa executada: " << currentIdTask << "\n" << std::endl;
+    std::cout << "Current time instant: " << globalClock << "\n" << "Executed Task ID: " << currentIdTask << "\n" << std::endl;
 }
 
 void Simulator::showAllTasks(const std::vector<TCB*>& pTasks, const int& currentIdTask, const unsigned int& globalClock)
@@ -365,7 +365,7 @@ void Simulator::showAllTasks(const std::vector<TCB*>& pTasks, const int& current
         std::cout << std::endl;
     }
 
-    std::cout << "Pressione enter para voltar ao menu de opcoes" << std::endl;
+    std::cout << "Press enter to return to the options menu" << std::endl;
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // limpa o buffer do cout
     std::cin.get();
 
@@ -381,7 +381,7 @@ void Simulator::showReadyTasks(const std::vector<TCB*>& pTasks, const int &curre
     showMinimumInfo(currentIdTask, globalClock);
 
     // Mostra as informacoes das tarefas para o usuario
-    std::cout << "Informacoes das tarefas na fila de prontas, e a tarefa executada:\n" << std::endl;
+    std::cout << "Information about tasks in the ready queue, and the executed task:\n" << std::endl;
 
     std::vector<TCB>& t = scheduler->getTasks();
     size_t tam = scheduler->getTasks().size();
@@ -397,7 +397,7 @@ void Simulator::showReadyTasks(const std::vector<TCB*>& pTasks, const int &curre
         std::cout << std::endl;
     }
 
-    std::cout << "Pressione enter para voltar ao menu de opcoes" << std::endl;
+    std::cout << "Press enter to return to the options menu" << std::endl;
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // limpa o buffer do cout
     std::cin.get();
 
@@ -407,7 +407,7 @@ void Simulator::showReadyTasks(const std::vector<TCB*>& pTasks, const int &curre
 }
 
 std::vector<TCB*> Simulator::loadArquive() {
-    std::ifstream file("../assets/configuration.txt");
+    std::ifstream file("configuration.txt");
     
     if (!file.is_open()) {
         std::cerr << "Error opening configuration file" << std::endl;

@@ -4,61 +4,60 @@
 const std::string Menu::inicialText = R"(
 Welcome to scheduler simulator!
  
-Clique em qualquer tecla para comecar.
+Press any key to start.
 )";
 
 const std::string Menu::arquiveText = R"(
-Carregar arquivo texto?
+Load the text file?
 
-Para comecar, eh necessario configurar o simulador, para isso, escolha uma das opcoes abaixo:
+To begin, you need to configure the simulator. To do so, choose one of the options below:
 
-1 -> Carregar a partir do arquivo plain.txt
-2 -> Configurar do zero
+1 -> Load from the configuration.txt file
+2 -> Configure from scratch
 
-Digite a opcao (o numero) desejada:
+Enter the desired option (number):
 )";
 
 const std::string Menu::chosenModeText = R"(
-Escolha o modo de execucao:
+Choose the execution mode:
 
-1 -> Passo a passo (Debugger)
-2 -> Direto
+1 -> Step by Step (Debugger)
+2 -> Direct
 
-Digite a opcao (o numero) desejada:
+Enter the desired option (number):
 )";
 
 const std::string Menu::algorithmText = R"(
-Escolha um algoritmo para o escalonador:
+Choose an algorithm for the scheduler:
 
 1 -> FIFO (First In First Out)
 2 -> SRTF (Shortest Remaining Time First)
-3 -> PRIOp (Prioridade preemptiva)
+3 -> PRIOp (Priority Preemption)
 
-Digite a opcao (o numero) desejada:
+Enter the desired option (number):
 )";
 
 const std::string Menu::taskText = R"(
-Criar nova tarefa?
-    
-Numero minimo de tarefas para funcionar o simulador: 1
+Create a new task?
+
+Minimum number of tasks for the simulator to work: 1
 )";
 
 const std::string Menu::colorText = R"(
-Selecione a cor da nova tarefa:
+Select the color of the new task:
 
-1 -> Vermelho
-2 -> Verde
-3 -> Amarelo
-4 -> Azul
+1 -> Red
+2 -> Green
+3 -> Yellow
+4 -> Blue
 5 -> Magenta
-6 -> Ciano
+6 -> Cyan
 
-Digite a opcao (o numero) desejada:
+Enter the desired option (number):
 )";
 
 const std::string Menu::quantumText = R"(
-Qual o valor do quantum? 
-Mínimo 0, máximo 4294967294
+What is the value of the quantum?
 )";
 
 Menu::Menu() : simulator(nullptr)
@@ -115,12 +114,12 @@ void Menu::createConfirmationScreen(const std::vector<TCB*>& tasks)
 {
     clearTerminal();
 
-    std::cout << "Confirme as configuracoes:\n" << std::endl;
+    std::cout << "Confirm the settings:\n" << std::endl;
 
-    std::cout << "Algoritmo do escalonador: " << simulator->getAlgorithmScheduler() << std::endl;
-    std::cout << "Duracao do quantum: " << simulator->getQuantum() << "\n" << std::endl;
+    std::cout << "Scheduler algorithm: " << simulator->getAlgorithmScheduler() << std::endl;
+    std::cout << "Quantum duration: " << simulator->getQuantum() << "\n" << std::endl;
 
-    std::cout << "Tarefas:\n" << std::endl;
+    std::cout << "Tasks:\n" << std::endl;
 
     // Todas as informacoes de cada uma das tarefas sao mostradas no terminal 
     size_t tam = tasks.size();
@@ -136,7 +135,7 @@ void Menu::createConfirmationScreen(const std::vector<TCB*>& tasks)
 
     std::flush(std::cout);
 
-    std::cout << "Pressione qualquer tecla para executar o simulador." << std::endl;
+    std::cout << "Press any key to execute the simulator." << std::endl;
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // limpa o buffer do cout
     std::cin.get();
 
@@ -158,6 +157,8 @@ void Menu::createChosenModeScreen()
     else if(option == 2){
         simulator->executeNoDebugger();
     }
+
+    std::cout << "Simulator executed successfully. \nOpen the image.svg file to view the resulting graph." << std::endl;
 }
 
 void Menu::createAlgorithmScreen()
@@ -182,8 +183,8 @@ void Menu::createTaskScreen()
 
     while(option == "Y" || option == "y"){
         std::cout 
-            << "Numero atual de tarefas: " << numTasks << "\n\n"
-            << "Deseja criar uma nova tarefa? (Y ou N)" << std::endl;
+            << "Current number of tasks: " << numTasks << "\n\n"
+            << "Do you want to create a new task? (Y or N)" << std::endl;
         
         std::vector<std::string> targets;
         targets.push_back("Y");
@@ -197,7 +198,7 @@ void Menu::createTaskScreen()
             if(numTasks == 0){
                 option = "Y";
 
-                std::cout << "\nNao eh possivel iniciar o simulador com 0 (zero) tarefas.\n" << std::endl;
+                std::cout << "\nIt's not possible to iniciate the simulator with 0 (zero) tasks.\n" << std::endl;
                 std::cin.get();
                 
                 clearTerminal();
@@ -213,22 +214,22 @@ void Menu::createTaskScreen()
 
         task.setId(numTasks);
 
-        std::cout << "\nID da tarefa: " << numTasks << std::endl;
+        std::cout << "\nTask ID: " << numTasks << std::endl;
         std::cout << colorText << std::endl;
 
         task.setColor(checkEntryNumber(1, 6));
 
-        std::cout << "\nDigite o instante do tempo que a tarefa entra no simulador:" << std::endl;
+        std::cout << "\nEnter the time instant that the task enters the simulator:" << std::endl;
         std::cin >> num;
 
         task.setEntryTime(num);
 
-        std::cout << "\nDigite a duracao da tarefa:" << std::endl;
+        std::cout << "\nEnter the task duration:" << std::endl;
         std::cin >> num;
 
         task.setDuration(num);
 
-        std::cout << "\nDigite a prioridade da tarefa:" << std::endl;
+        std::cout << "\nEnter the task priority:" << std::endl;
         std::cin >> num;
 
         task.setPriority(num);
@@ -261,7 +262,7 @@ int Menu::checkEntryNumber(int firstOption, int lastOption)
     std::cin >> option;
 
     while(option < firstOption || option > lastOption){
-        std::cout << "\nOpcao invalida. Tente novamente.\n" << std::endl;
+        std::cout << "\nInvalid option. Try again.\n" << std::endl;
         std::cin >> option;
     }
 
@@ -276,7 +277,7 @@ unsigned int Menu::checkEntryNumber(unsigned int firstNumber, unsigned int lastO
     std::cin >> num;
 
     while(num < firstNumber || num > lastOption){
-        std::cout << "\nNumero invalido. Tente novamente.\n" << std::endl;
+        std::cout << "\nInvalid option. Try again.\n" << std::endl;
         std::cin >> num;
     }
 
@@ -297,7 +298,7 @@ std::string Menu::checkEntryString(std::vector<std::string> targets)
             return str; // achou, retorna
         }
 
-        std::cout << "\nOpcao invalida. Tente novamente.\n" << std::endl;
+        std::cout << "\nInvalid option. Try again.\n" << std::endl;
     }
 }
 

@@ -11,7 +11,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 # Add an executable target
 # The first argument is the executable name
 # Subsequent arguments are the source files for the executable
-add_executable(Scheduler 
+add_executable(Scheduler.exe 
 	main.cpp
         ExtraInfo.cpp
 	ExtraInfo.h
