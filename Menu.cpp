@@ -111,7 +111,7 @@ void Menu::createArquiveScreen()
     clearTerminal();
 }
 
-void Menu::createConfirmationScreen(const std::vector<TCB> tasks)
+void Menu::createConfirmationScreen(const std::vector<TCB*>& tasks)
 {
     clearTerminal();
 
@@ -126,11 +126,11 @@ void Menu::createConfirmationScreen(const std::vector<TCB> tasks)
     size_t tam = tasks.size();
     for(int i = 0; i < tam; i++){
         std::cout << 
-            "ID: " << tasks[i].getId() << "\n" <<
-            "Color: " << tasks[i].getColor() << "\n" <<
-            "Entry time: " << tasks[i].getEntryTime() << "\n" <<
-            "Duration: " << tasks[i].getDuration() << "\n" <<
-            "Priority: " << tasks[i].getPriority() << "\n" <<
+            "ID: " << tasks[i]->getId() << "\n" <<
+            "Color: " << tasks[i]->getColor() << "\n" <<
+            "Entry time: " << tasks[i]->getEntryTime() << "\n" <<
+            "Duration: " << tasks[i]->getDuration() << "\n" <<
+            "Priority: " << tasks[i]->getPriority() << "\n" <<
         std::endl;
     }
 

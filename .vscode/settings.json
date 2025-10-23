@@ -63,6 +63,9 @@
         "map": "cpp",
         "unordered_map": "cpp",
         "xhash": "cpp",
-        "xtree": "cpp"
+        "xtree": "cpp",
+        "deque": "cpp",
+        "queue": "cpp",
+        "set": "cpp"
     }
 }

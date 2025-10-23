@@ -31,7 +31,7 @@ public:
     // metodos para criar partes do menu
     void createInicialScreen();
     void createArquiveScreen();
-    void createConfirmationScreen(const std::vector<TCB> tasks);
+    void createConfirmationScreen(const std::vector<TCB*>& tasks);
     void createChosenModeScreen();
     void createAlgorithmScreen();
     void createTaskScreen();

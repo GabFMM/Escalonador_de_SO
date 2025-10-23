@@ -90,6 +90,7 @@ unsigned int TCB::getEndTime() const {
     return endTime;
 }
 
+// util quando this eh ponteiro
 void TCB::copyTCB(const TCB &t)
 {
     if (this != &t) { // evita autoatribuição

@@ -19,7 +19,7 @@ void Scheduler::setTasks(std::vector<TCB> t)
     readyTasks = t;
 }
 
-std::vector<TCB> Scheduler::getTasks()
+std::vector<TCB>& Scheduler::getTasks()
 {
     return readyTasks;
 }

@@ -21,7 +21,7 @@ private:
     GanttChartGenerator* imageGenerator;
     ExtraInfo extraInfo;
 
-    std::vector<TCB> tasks;
+    std::vector<TCB*> tasks;
 
 public:
     Simulator();
@@ -30,18 +30,19 @@ public:
     void start();
     void executeDebugger();
     void executeNoDebugger();
-    std::vector<TCB> loadArquive();
+    std::vector<TCB*> loadArquive();
     void generateImage();
 
     void addTask(TCB task);
     void removeTask(unsigned int idTask);
+    void updateTask(const TCB* task);
 
     void setAlgorithmScheduler(int i); // Usado por Menu.cpp
     void setAlgorithmScheduler(std::string algorithm);
 
     void setQuantum(unsigned int q);
 
-    std::vector<TCB> getTasks() const;
+    std::vector<TCB*> getTasks() const;
     std::string getAlgorithmScheduler() const;
     unsigned int getQuantum() const;
 
@@ -55,6 +56,13 @@ public:
     void trim(std::string &s);
     void remove_cr(std::string &s);
 
+
+    // Debugger
     void createTask(std::vector<TCB*>& pTasks, int idTask);
     void deleteTasks(std::vector<TCB*>& pTasks);
+
+    void chosenMode(const std::vector<TCB*>& pTasks, const int& currentIdTask, const unsigned int& globalClock);
+    void showMinimumInfo(const int& currentIdTask, const unsigned int& globalClock);
+    void showAllTasks(const std::vector<TCB*>& pTasks, const int& currentIdTask, const unsigned int& globalClock);
+    void showReadyTasks(const std::vector<TCB*>& pTasks, const int& currentIdTask, const unsigned int& globalClock);
 };

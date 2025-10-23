@@ -21,7 +21,7 @@ public:
     void setAlgorithm(Algorithm algo);
 
     void setTasks(std::vector<TCB> t);
-    std::vector<TCB> getTasks();
+    std::vector<TCB>& getTasks();
 
     std::vector<int> getIdTasks();
 
