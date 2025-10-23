@@ -22,12 +22,14 @@ public:
     void setTasks(std::vector<TCB> t);
     std::vector<TCB> getTasks();
 
+    std::vector<int> getIdTasks();
+
     void addTask(TCB task);
     void removeTask(unsigned int idTask);
     const bool existTask() const;
 
-    TCB getNextTask();
-    TCB getNextTaskFIFO();
-    TCB getNextTaskSRTF();
-    TCB getNextTaskPRIOp();
+    TCB* getNextTask();
+    TCB* getNextTaskFIFO();
+    TCB* getNextTaskSRTF();
+    TCB* getNextTaskPRIOp();
 };

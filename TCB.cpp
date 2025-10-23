@@ -34,15 +34,21 @@ void TCB::setEntryTime(unsigned int entryTime) {
     this->entryTime = entryTime;
 }
 
+void TCB::setLastUsedTime(unsigned int lastUsedTime)
+{
+    this->lastUsedTime = lastUsedTime;
+}
+
 void TCB::setDuration(unsigned int duration) {
     this->duration = duration;
+    setRemainingTime(duration);
 }
 
 void TCB::setPriority(unsigned int priority) {
     this->priority = priority;
 }
 
-void TCB::setRemainingTime(unsigned int remainingTime) {
+void TCB::setRemainingTime(long long remainingTime) {
     this->remainingTime = remainingTime;
 }
 
@@ -61,6 +67,11 @@ int TCB::getColor() const {
 
 unsigned int TCB::getEntryTime() const {
     return entryTime;
+}
+
+unsigned int TCB::getLastUsedTime() const
+{
+    return lastUsedTime;
 }
 
 unsigned int TCB::getDuration() const {

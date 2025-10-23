@@ -24,6 +24,17 @@ std::vector<TCB> Scheduler::getTasks()
     return readyTasks;
 }
 
+std::vector<int> Scheduler::getIdTasks()
+{
+    std::vector<int> idTasks(readyTasks.size(), 0);
+
+    std::size_t tam = readyTasks.size();
+    for(std::size_t i = 0; i < tam; i++)
+        idTasks[i] = readyTasks[i].getId();
+
+    return idTasks;
+}
+
 void Scheduler::addTask(TCB task)
 {
     readyTasks.push_back(task);
@@ -42,7 +53,7 @@ const bool Scheduler::existTask() const
     return readyTasks.size();
 }
 
-TCB Scheduler::getNextTask()
+TCB* Scheduler::getNextTask()
 {
     switch (algorithmChosen)
     {
@@ -59,20 +70,22 @@ TCB Scheduler::getNextTask()
         break;
     }
 
-    return TCB();
+    return nullptr;
 }
 
-TCB Scheduler::getNextTaskFIFO()
+TCB* Scheduler::getNextTaskFIFO()
 {
-    return readyTasks[0];
+    if(readyTasks.empty()) return nullptr;
+    
+    return &(readyTasks[0]);
 }
 
-TCB Scheduler::getNextTaskSRTF()
+TCB* Scheduler::getNextTaskSRTF()
 {
-    return TCB();
+    return nullptr;
 }
 
-TCB Scheduler::getNextTaskPRIOp()
+TCB* Scheduler::getNextTaskPRIOp()
 {
-    return TCB();
+    return nullptr;
 }

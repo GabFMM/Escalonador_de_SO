@@ -56,8 +56,7 @@ void Simulator::executeNoDebugger()
         }
     );
 
-    TCB currentTask;
-    currentTask.setId(INT_MIN);
+    TCB* currentTask = nullptr;
     unsigned int timeLastInterrupt = 0; // in ticks
 
     // calcula o tick/segundo
@@ -65,24 +64,25 @@ void Simulator::executeNoDebugger()
 
     // cria o relogio global simulado
     const double deltaTime = 1.0;
-    double globalClock = 0.0;
+    unsigned int globalClock = 0;
 
     // enquanto houver tarefas no simulador (na "memoria")
     while(tasks.size()){ 
         // verifica se o tempo atual corresponde a alguma tarefa que pode entrar no escalonador
         unsigned int indexTask = 0;
-        if(canAnyTaskEnter(globalClock, &indexTask, currentTask.getId())){
+        if(canAnyTaskEnter(globalClock, &indexTask, scheduler->getIdTasks())){
 
             // ignora a primeira interrupcao
-            if(currentTask.getId() != INT_MIN){
+            if(currentTask != nullptr){
                 // desenha na imagem o que aconteceu no processador ate agora (interrupcao)
                 // em base na tarefa atual
-                imageGenerator->addRectTask(currentTask.getId(), currentTask.getColor(), globalClock, timeLastInterrupt);
+                imageGenerator->addRectTask(currentTask->getId(), currentTask->getColor(), globalClock, timeLastInterrupt);
             }
 
             timeLastInterrupt = globalClock;
 
             // adiciona a tarefa na fila de prontas do escalonador
+            tasks[indexTask].setLastUsedTime(globalClock);
             scheduler->addTask(tasks[indexTask]);
 
             // "executa" a tarefa no processador
@@ -90,24 +90,28 @@ void Simulator::executeNoDebugger()
         }
 
         // Verifica se o tempo restante da tarefa executada acabou 
-        if(currentTask.getId() != INT_MIN){
-            currentTask.setRemainingTime(currentTask.getDuration() - (globalClock - currentTask.getEntryTime()));
+        if(currentTask != nullptr){
+            currentTask->setRemainingTime(currentTask->getDuration() - (globalClock - currentTask->getLastUsedTime()));
 
-            if(currentTask.getRemainingTime() <= 0){
+            if(currentTask->getRemainingTime() <= 0){
                 // desenha na imagem o que aconteceu no processador ate agora (interrupcao)
                 // em base na tarefa atual
-                imageGenerator->addRectTask(currentTask.getId(), currentTask.getColor(), globalClock, timeLastInterrupt);
+                imageGenerator->addRectTask(currentTask->getId(), currentTask->getColor(), globalClock, timeLastInterrupt);
 
                 timeLastInterrupt = globalClock;
 
                 // remove a tarefa na fila de prontas do simulator
-                removeTask(currentTask.getId());
+                int id = currentTask->getId();
+                removeTask(id);
 
                 // remove a tarefa na fila de prontas do escalonador
-                scheduler->removeTask(currentTask.getId());
+                scheduler->removeTask(id);
 
                 // "executa" outra tarefa no processador
                 currentTask = scheduler->getNextTask();
+
+                if(currentTask != nullptr)
+                    currentTask->setLastUsedTime(globalClock);
             }
         }
         // atualiza relogio
@@ -389,11 +393,15 @@ unsigned int Simulator::getMaxEntryTime()
 }
 
 // timeNow em ticks
-const bool Simulator::canAnyTaskEnter(double timeNow, unsigned int* indexTask, const unsigned int& exceptionIdTask)
+const bool Simulator::canAnyTaskEnter(double timeNow, unsigned int* indexTask, const std::vector<int>& exceptionIdTasks)
 {
     size_t tam = tasks.size();
     for(size_t i = 0; i < tam; i++){
-        if(tasks[i].getId() != exceptionIdTask && timeNow >= tasks[i].getEntryTime()){
+        if(
+            std::find(exceptionIdTasks.begin(), exceptionIdTasks.end(), tasks[i].getId()) == exceptionIdTasks.end() 
+            &&
+            timeNow >= tasks[i].getEntryTime()
+        ){
             (*indexTask) = i;
             return true;
         }
