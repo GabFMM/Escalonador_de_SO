@@ -102,6 +102,7 @@ TCB& TCB::operator=(const TCB &t)
         priority = t.priority;
         remainingTime = t.remainingTime;
         endTime = t.endTime;
+        lastUsedTime = t.lastUsedTime;
     }
     return *this; // retorna o objeto atual (por referência)
 }

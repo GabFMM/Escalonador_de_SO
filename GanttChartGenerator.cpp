@@ -16,14 +16,14 @@ void GanttChartGenerator::createAxis(size_t numTasks, std::vector<unsigned int> 
     // Calcula o tamanho do eixo Y
     // 13 corresponde a altura em pixels do retangulo
     // 2 serve para separar cada retangulo
-    // +13 serve para separar o ultimo retangulo do eixo X
-    unsigned int tamY = numTasks * 13 * 2 + 13;
+    // +26 serve para separar o ultimo retangulo do eixo X e do ^
+    unsigned int tamY = numTasks * 13 + 26;
     tamAxisY = tamY;
     posAxisY.first = 45;
     posAxisY.second = 60;
 
     // Calcula o eixo X em base de Y
-    unsigned int tamX = tamY * 1.5;
+    unsigned int tamX = tamY * 2;
     if(tamX > 1920)
         tamX = 1920;
     tamAxisX = tamX;
@@ -41,7 +41,7 @@ void GanttChartGenerator::createAxis(size_t numTasks, std::vector<unsigned int> 
         <rect x="45" y="60" width="2" height=")" << tamY << R"(" fill="black"></rect>
         <rect x="45" y=")" << tamY + 60 << R"(" width=")" << tamX << R"(" height="2" fill="black"></rect>
         <text x=")" << tamX + 45 - 5 << R"(" y=")" << tamY + 60 + 11<< R"(" font-size="30" fill="black">></text>
-        <text x=")" << tamX + 60 << R"(" y=")" << tamY + 60 + 7.5<< R"(" font-size="20" fill="black">time (ticks)</text>)";
+        <text x=")" << tamX + posAxisX.first + 30 << R"(" y=")" << tamY + 60 + 7.5<< R"(" font-size="20" fill="black">time (ticks)</text>)";
 
     // Preenche o eixo Y com os ID's das tarefas
     idPosYTasks.reserve(numTasks); // limita o tamanho da tabela hash
@@ -108,7 +108,7 @@ void GanttChartGenerator::generateImage()
 
     // cabecalho
     arquive << R"(<?xml version="1.0" encoding="UTF-8"?>)" << '\n';
-    arquive << R"(<svg xmlns="http://www.w3.org/2000/svg" width=")" << tamAxisX + posAxisX.first + 120 << R"(" height=")" << tamAxisY + posAxisY.second + 50 << R"(">)" << '\n';
+    arquive << R"(<svg xmlns="http://www.w3.org/2000/svg" width=")" << tamAxisX + posAxisX.first + 130 << R"(" height=")" << tamAxisY + posAxisY.second + 50 << R"(">)" << '\n';
 
     // miolo
     arquive << buffer.str();

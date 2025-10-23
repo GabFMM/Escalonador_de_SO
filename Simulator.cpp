@@ -77,6 +77,21 @@ void Simulator::executeNoDebugger()
                 // desenha na imagem o que aconteceu no processador ate agora (interrupcao)
                 // em base na tarefa atual
                 imageGenerator->addRectTask(currentTask->getId(), currentTask->getColor(), globalClock, timeLastInterrupt);
+
+                // Atualiza o tempo restante da tarefa executada
+                currentTask->setRemainingTime(currentTask->getRemainingTime() - deltaTime);
+
+                if(currentTask->getRemainingTime() <= 0){
+                    // remove a tarefa na fila de prontas do simulator
+                    int id = currentTask->getId();
+                    removeTask(id);
+
+                    // remove a tarefa na fila de prontas do escalonador
+                    scheduler->removeTask(id);
+
+                    // Recalcula o valor do index para nao acessar memoria invalida
+                    canAnyTaskEnter(globalClock, &indexTask, scheduler->getIdTasks());
+                }
             }
 
             timeLastInterrupt = globalClock;
@@ -88,10 +103,9 @@ void Simulator::executeNoDebugger()
             // "executa" a tarefa no processador
             currentTask = scheduler->getNextTask();
         }
-
         // Verifica se o tempo restante da tarefa executada acabou 
-        if(currentTask != nullptr){
-            currentTask->setRemainingTime(currentTask->getDuration() - (globalClock - currentTask->getLastUsedTime()));
+        else if(currentTask != nullptr){
+            currentTask->setRemainingTime(currentTask->getRemainingTime() - deltaTime);
 
             if(currentTask->getRemainingTime() <= 0){
                 // desenha na imagem o que aconteceu no processador ate agora (interrupcao)

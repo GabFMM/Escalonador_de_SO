@@ -37,7 +37,24 @@ std::vector<int> Scheduler::getIdTasks()
 
 void Scheduler::addTask(TCB task)
 {
-    readyTasks.push_back(task);
+    switch (algorithmChosen)
+    {
+    case Algorithm::FIFO:
+        // Sem necessidade de ordenacao, pois no simulator ja vem ordenado por ordem de chegada
+        readyTasks.push_back(task);
+        break;
+    
+    case Algorithm::SRTF:
+        readyTasks.push_back(task);
+        // Ordena por menor tempo restante
+        std::sort(readyTasks.begin(), readyTasks.end(), [](const TCB& a, const TCB& b){return a.getRemainingTime() < b.getRemainingTime();});
+        break;
+    
+    case Algorithm::PRIOp:
+        
+        break;
+    }
+    
 }
 
 void Scheduler::removeTask(unsigned int idTask)
@@ -55,37 +72,7 @@ const bool Scheduler::existTask() const
 
 TCB* Scheduler::getNextTask()
 {
-    switch (algorithmChosen)
-    {
-    case Algorithm::FIFO:
-        return getNextTaskFIFO();
-        break;
-    
-    case Algorithm::SRTF:
-        return getNextTaskSRTF();
-        break;
-    
-    case Algorithm::PRIOp:
-        return getNextTaskPRIOp();
-        break;
-    }
-
-    return nullptr;
-}
-
-TCB* Scheduler::getNextTaskFIFO()
-{
     if(readyTasks.empty()) return nullptr;
     
     return &(readyTasks[0]);
-}
-
-TCB* Scheduler::getNextTaskSRTF()
-{
-    return nullptr;
-}
-
-TCB* Scheduler::getNextTaskPRIOp()
-{
-    return nullptr;
 }

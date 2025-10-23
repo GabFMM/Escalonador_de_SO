@@ -10,6 +10,7 @@ private:
     unsigned int priority;
     long long remainingTime;
     unsigned int endTime;
+    // Obs: novo atributo -> mudar sobrecarga do operador=
 
 public:
     TCB();

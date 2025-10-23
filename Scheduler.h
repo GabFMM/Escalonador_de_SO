@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector> // TO-DO: mudar para list para melhor desempenho em removeTask
+#include <algorithm>
 
 #include "TCB.h"
 
@@ -29,7 +30,4 @@ public:
     const bool existTask() const;
 
     TCB* getNextTask();
-    TCB* getNextTaskFIFO();
-    TCB* getNextTaskSRTF();
-    TCB* getNextTaskPRIOp();
 };
