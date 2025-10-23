@@ -38,6 +38,121 @@ void Simulator::start()
 
 void Simulator::executeDebugger()
 {
+    // Ponteiro para usar no depurador
+    std::vector<TCB*> ptasks;
+    size_t tam = tasks.size();
+    for(size_t i = 0; i < tam; i++)
+        ptasks[i] = &(tasks[i]);
+
+    // cria o gerador de imagem
+    if(imageGenerator == nullptr)
+        imageGenerator = new GanttChartGenerator(); 
+
+    // TO-DO: invés de chamar o getMaxEntryTime com O(n), fazer o createAxis depois de ordenar as tarefas por ordem de chegada
+    imageGenerator->createAxis(tasks.size(), getIdTasks(), sumDurationTasks(), getMaxEntryTime());
+
+    // ordena as tarefas por ordem de entrada
+    std::sort(tasks.begin(), tasks.end(), 
+        [](const TCB& t1, const TCB& t2){
+            return t1.getEntryTime() < t2.getEntryTime();
+        }
+    );
+
+    TCB* currentTask = nullptr;
+    unsigned int timeLastInterrupt = 0; // in ticks
+
+    // calcula o tick/segundo
+    double tps = calcTicksPerSecond();
+
+    // cria o relogio global simulado
+    const double deltaTime = 1.0;
+    unsigned int globalClock = 0;
+
+    // enquanto houver tarefas no simulador (na "memoria")
+    while(tasks.size()){ 
+        // verifica se o tempo atual corresponde a alguma tarefa que pode entrar no escalonador
+        unsigned int indexTask = 0;
+        if(canAnyTaskEnter(globalClock, &indexTask, scheduler->getIdTasks())){
+
+            // ignora a primeira interrupcao
+            if(currentTask != nullptr){
+                // desenha na imagem o que aconteceu no processador ate agora (interrupcao)
+                // em base na tarefa atual
+                imageGenerator->addRectTask(currentTask->getId(), currentTask->getColor(), globalClock, timeLastInterrupt);
+
+                // Atualiza o tempo restante da tarefa executada
+                currentTask->setRemainingTime(currentTask->getRemainingTime() - deltaTime);
+
+                if(currentTask->getRemainingTime() <= 0){
+                    // remove a tarefa na fila de prontas do simulator
+                    int id = currentTask->getId();
+                    removeTask(id);
+
+
+                    // remove a tarefa na fila de prontas do escalonador
+                    scheduler->removeTask(id);
+
+                    // Recalcula o valor do index para nao acessar memoria invalida
+                    canAnyTaskEnter(globalClock, &indexTask, scheduler->getIdTasks());
+                }
+            }
+
+            timeLastInterrupt = globalClock;
+
+            // adiciona a tarefa na fila de prontas do escalonador
+            tasks[indexTask].setLastUsedTime(globalClock);
+            scheduler->addTask(tasks[indexTask]);
+
+            // "executa" a tarefa no processador
+            currentTask = scheduler->getNextTask();
+        }
+        // Verifica se o tempo restante da tarefa executada acabou 
+        else if(currentTask != nullptr){
+            currentTask->setRemainingTime(currentTask->getRemainingTime() - deltaTime);
+
+            if(currentTask->getRemainingTime() <= 0){
+                // desenha na imagem o que aconteceu no processador ate agora (interrupcao)
+                // em base na tarefa atual
+                imageGenerator->addRectTask(currentTask->getId(), currentTask->getColor(), globalClock, timeLastInterrupt);
+
+                timeLastInterrupt = globalClock;
+
+                // remove a tarefa na fila de prontas do simulator
+                int id = currentTask->getId();
+                removeTask(id);
+
+                // remove a tarefa na fila de prontas do escalonador
+                scheduler->removeTask(id);
+
+                // "executa" outra tarefa no processador
+                currentTask = scheduler->getNextTask();
+
+                if(currentTask != nullptr)
+                    currentTask->setLastUsedTime(globalClock);
+            }
+        }
+        // Mostra o tempo atual para o usuario
+        std::cout << "Time (in ticks) now: " << globalClock << "\n" << std::endl;
+
+        // Mostra as informacoes das tarefas para o usuario
+        std::cout << "Tasks information:\n" << std::endl;
+        size_t tam = tasksCopy.size();
+        for(size_t i = 0; i < tam; i++){
+            std::cout << 
+            "ID: " << tasksCopy[i].getId() << "\n" <<
+            "Color: " << tasksCopy[i].getColor() << "\n" <<
+            "Entry time: " << tasksCopy[i].getEntryTime() << "\n" <<
+            "Duration: " << tasksCopy[i].getDuration() << "\n" <<
+            "Priority: " << tasksCopy[i].getPriority() << "\n" <<
+            std::endl;
+        }
+
+        // atualiza relogio
+        globalClock += deltaTime;
+    }
+
+    deleteTasks(ptasks);
+    generateImage();
 }
 
 void Simulator::executeNoDebugger()
@@ -148,6 +263,35 @@ void Simulator::trim(std::string &s) {
 // função para remover todos os '\r' (útil para arquivos Windows)
 void Simulator::remove_cr(std::string &s) {
     s.erase(std::remove(s.begin(), s.end(), '\r'), s.end());
+}
+
+// Usado no depurador
+// Cria uma tarefa, com as informacoes do idTask passado, no heap
+void Simulator::createTask(std::vector<TCB*>& pTasks, int idTask)
+{
+    // Encontra a tarefa a ser copiada
+    std::vector<TCB>::iterator it;
+    for(it = tasks.begin(); it->getId() != idTask; it++);
+
+    TCB* newTask = new TCB();
+    newTask->copyTCB((*it));
+
+    // Encontra a tarefa a ser copiada
+    std::vector<TCB*>::iterator it2;
+    for(it2 = pTasks.begin(); (*it2)->getId() != idTask; it2++);
+
+    (*it2) = newTask; 
+}
+
+void Simulator::deleteTasks(std::vector<TCB*>& pTasks)
+{
+    size_t tam = pTasks.size();
+    for(size_t i = 0; i < tam; i++){
+        if(pTasks[i] != nullptr){
+            delete pTasks[i];
+            pTasks[i] = nullptr;
+        }
+    }
 }
 
 std::vector<TCB> Simulator::loadArquive() {

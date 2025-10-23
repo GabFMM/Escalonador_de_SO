@@ -7,7 +7,7 @@ entryTime(0),
 duration(0),
 priority(0),
 remainingTime(0),
-endTime(0){
+endTime(std::numeric_limits<unsigned int>::max()){
 
 }
 
@@ -88,6 +88,23 @@ unsigned int TCB::getRemainingTime() const {
 
 unsigned int TCB::getEndTime() const {
     return endTime;
+}
+
+void TCB::copyTCB(const TCB &t)
+{
+    if (this != &t) { // evita autoatribuição
+        
+        // Copie aqui os atributos de 't' para 'this'
+        id = t.id;
+        color = t.color;
+        entryTime = t.entryTime;
+        duration = t.duration;
+        priority = t.priority;
+        remainingTime = t.remainingTime;
+        endTime = t.endTime;
+        lastUsedTime = t.lastUsedTime;
+    }
+    return;
 }
 
 TCB& TCB::operator=(const TCB &t)

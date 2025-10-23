@@ -1,5 +1,7 @@
 #pragma once
 
+#include <limits>
+
 class TCB{
 private:
     unsigned int id;
@@ -35,6 +37,8 @@ public:
     unsigned int getPriority() const;
     unsigned int getRemainingTime() const;
     unsigned int getEndTime() const;
+
+    void copyTCB(const TCB& t);
 
     // Sobrecarga de operadores
     TCB& operator=(const TCB& t);

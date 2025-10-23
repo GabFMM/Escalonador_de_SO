@@ -54,4 +54,7 @@ public:
 
     void trim(std::string &s);
     void remove_cr(std::string &s);
+
+    void createTask(std::vector<TCB*>& pTasks, int idTask);
+    void deleteTasks(std::vector<TCB*>& pTasks);
 };

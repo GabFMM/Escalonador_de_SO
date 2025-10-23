@@ -128,9 +128,9 @@ void Menu::createConfirmationScreen(const std::vector<TCB> tasks)
         std::cout << 
             "ID: " << tasks[i].getId() << "\n" <<
             "Color: " << tasks[i].getColor() << "\n" <<
+            "Entry time: " << tasks[i].getEntryTime() << "\n" <<
             "Duration: " << tasks[i].getDuration() << "\n" <<
             "Priority: " << tasks[i].getPriority() << "\n" <<
-            "Entry time: " << tasks[i].getEntryTime() << "\n" <<
         std::endl;
     }
 
