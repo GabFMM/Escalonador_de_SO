@@ -1,7 +1,7 @@
 # compilacao cmake
 build/CmakeFiles/
 build/cmake_install.cmake
-build/CMakeCache
+build/CMakeCache.txt
 build/MakeFile
 
 # configuracoes vscode
