@@ -76,8 +76,8 @@ void Simulator::executeDebugger()
         int id = -1;
 
         // verifica se o tempo atual corresponde a alguma tarefa que pode entrar no escalonador
-        unsigned int indexTask = 0;
-        if(canAnyTaskEnter(globalClock, &indexTask, scheduler->getIdTasks())){
+        std::vector<unsigned int> indexTasks;
+        if(canAnyTasksEnter(globalClock, indexTasks, scheduler->getIdTasks())){
 
             // ignora a primeira interrupcao
             if(currentTask != nullptr){
@@ -103,15 +103,19 @@ void Simulator::executeDebugger()
                     scheduler->removeTask(id);
 
                     // Recalcula o valor do index para nao acessar memoria invalida
-                    canAnyTaskEnter(globalClock, &indexTask, scheduler->getIdTasks());
+                    canAnyTasksEnter(globalClock, indexTasks, scheduler->getIdTasks());
                 }
             }
 
             timeLastInterrupt = globalClock;
 
-            // adiciona a tarefa na fila de prontas do escalonador
-            tasks[indexTask]->setLastUsedTime(globalClock);
-            scheduler->addTask(*(tasks[indexTask]));
+            // adiciona a(s) tarefa(s) na fila de prontas do escalonador
+            size_t tam = indexTasks.size();
+            for(size_t i = 0; i < tam; i++){
+                tasks[indexTasks[i]]->setLastUsedTime(globalClock);
+            
+                scheduler->addTask(*(tasks[indexTasks[i]]));
+            }
 
             // "executa" a tarefa no processador
             currentTask = scheduler->getNextTask();
@@ -171,9 +175,6 @@ void Simulator::executeDebugger()
 
                 // "executa" outra tarefa no processador
                 currentTask = scheduler->getNextTask();
-
-                if(currentTask != nullptr)
-                    currentTask->setLastUsedTime(globalClock);
             }
         }
 
@@ -222,8 +223,8 @@ void Simulator::executeNoDebugger()
     // enquanto houver tarefas no simulador (na "memoria")
     while(tasks.size()){ 
         // verifica se o tempo atual corresponde a alguma tarefa que pode entrar no escalonador
-        unsigned int indexTask = 0;
-        if(canAnyTaskEnter(globalClock, &indexTask, scheduler->getIdTasks())){
+        std::vector<unsigned int> indexTasks;
+        if(canAnyTasksEnter(globalClock, indexTasks, scheduler->getIdTasks())){
 
             // ignora a primeira interrupcao
             if(currentTask != nullptr){
@@ -243,15 +244,19 @@ void Simulator::executeNoDebugger()
                     scheduler->removeTask(id);
 
                     // Recalcula o valor do index para nao acessar memoria invalida
-                    canAnyTaskEnter(globalClock, &indexTask, scheduler->getIdTasks());
+                    canAnyTasksEnter(globalClock, indexTasks, scheduler->getIdTasks());
                 }
             }
 
             timeLastInterrupt = globalClock;
 
-            // adiciona a tarefa na fila de prontas do escalonador
-            tasks[indexTask]->setLastUsedTime(globalClock);
-            scheduler->addTask(*(tasks[indexTask]));
+            // adiciona a(s) tarefa(s) na fila de prontas do escalonador
+            size_t tam = indexTasks.size();
+            for(size_t i = 0; i < tam; i++){
+                tasks[indexTasks[i]]->setLastUsedTime(globalClock);
+            
+                scheduler->addTask(*(tasks[indexTasks[i]]));
+            }
 
             // "executa" a tarefa no processador
             currentTask = scheduler->getNextTask();
@@ -730,19 +735,21 @@ unsigned int Simulator::getMaxEntryTime()
 }
 
 // timeNow em ticks
-const bool Simulator::canAnyTaskEnter(double timeNow, unsigned int* indexTask, const std::vector<int>& exceptionIdTasks)
+const bool Simulator::canAnyTasksEnter(double timeNow, std::vector<unsigned int>& indexTasks, const std::vector<int>& exceptionIdTasks)
 {
+    bool found = false;
+
     size_t tam = tasks.size();
     for(size_t i = 0; i < tam; i++){
-        if(
-            std::find(exceptionIdTasks.begin(), exceptionIdTasks.end(), tasks[i]->getId()) == exceptionIdTasks.end() 
-            &&
-            timeNow >= tasks[i]->getEntryTime()
-        ){
-            (*indexTask) = i;
-            return true;
+        // verifica se o id de tasks esta dentro de exceptionIdTasks
+        std::vector<int>::const_iterator it;
+        it = std::find(exceptionIdTasks.begin(), exceptionIdTasks.end(), tasks[i]->getId());
+
+        if(it == exceptionIdTasks.end() && timeNow >= tasks[i]->getEntryTime()){
+            indexTasks.push_back(static_cast<unsigned int>(i));
+            found = true;
         }
     }
     
-    return false;
+    return found;
 }

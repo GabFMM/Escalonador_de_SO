@@ -51,7 +51,7 @@ public:
     std::vector<unsigned int> getIdTasks();
     unsigned int getMaxEntryTime();
 
-    const bool canAnyTaskEnter(double timeNow, unsigned int* indexTask, const std::vector<int>& exceptionIdTasks);
+    const bool canAnyTasksEnter(double timeNow, std::vector<unsigned int>& indexTasks, const std::vector<int>& exceptionIdTasks);
 
     void trim(std::string &s);
     void remove_cr(std::string &s);
