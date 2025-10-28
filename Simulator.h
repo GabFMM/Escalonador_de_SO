@@ -5,6 +5,7 @@
 #include <sstream>
 #include <algorithm>
 #include <climits>
+#include <random>
 
 #include "Scheduler.h"
 #include "GanttChartGenerator.h"
@@ -55,7 +56,8 @@ public:
 
     void trim(std::string &s);
     void remove_cr(std::string &s);
-
+    const bool existId(int id);
+    int modifyId(int id);
 
     // Debugger
     void createTask(std::vector<TCB*>& pTasks, int idTask);

@@ -332,6 +332,39 @@ void Simulator::remove_cr(std::string &s) {
     s.erase(std::remove(s.begin(), s.end(), '\r'), s.end());
 }
 
+const bool Simulator::existId(int id)
+{
+    size_t tam = tasks.size();
+    for(size_t i = 0; i < tam; i++)
+        if(tasks[i]->getId() == id)
+            return true;
+    
+    return false;
+}
+
+int Simulator::modifyId(int id)
+{
+    static std::mt19937 gen(std::random_device{}());
+
+    int newId = id;
+    int factor = 2;
+    const int maxFactor = 1000000; // seguranca
+    int numAttempts = 0;
+    
+    // metodo escolhido: dou preferencia aos numeros menores
+    while(existId(newId)){
+        std::uniform_int_distribution<int> dist(0, factor - 1);
+        newId = dist(gen);
+
+        numAttempts++;
+
+        if(numAttempts >= factor / 2 && factor < maxFactor)
+            factor *= 2;
+    }
+
+    return newId;
+}
+
 // Usado no depurador
 // Cria uma tarefa, com as informacoes do idTask passado, no heap
 void Simulator::createTask(std::vector<TCB*>& pTasks, int idTask)
@@ -558,6 +591,16 @@ std::vector<TCB*> Simulator::loadArquive() {
             std::cerr << "Bad or missing ID in line: " << line << std::endl; 
             continue; 
         }
+
+        // verifica se o ID ja existe
+        if(existId(tmp)){
+            // muda o valor dele
+            int prev = tmp;
+            tmp = modifyId(tmp);
+
+            std::cout << "The task ID " << prev << " was modified for " << tmp << ", because " << prev << " already exists.\n" << std::endl;
+        }
+
         task->setId(tmp);
         
         // Color

@@ -112,8 +112,6 @@ void Menu::createArquiveScreen()
 
 void Menu::createConfirmationScreen(const std::vector<TCB*>& tasks)
 {
-    clearTerminal();
-
     std::cout << "Confirm the settings:\n" << std::endl;
 
     std::cout << "Scheduler algorithm: " << simulator->getAlgorithmScheduler() << std::endl;

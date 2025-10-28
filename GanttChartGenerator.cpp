@@ -23,7 +23,7 @@ void GanttChartGenerator::createAxis(size_t numTasks, std::vector<unsigned int> 
     posAxisY.second = 60;
 
     // Calcula o eixo X em base de Y
-    unsigned int tamX = tamY * 2;
+    unsigned int tamX = tamY * 3;
     if(tamX > 1920)
         tamX = 1920;
     tamAxisX = tamX;
