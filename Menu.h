@@ -38,7 +38,6 @@ public:
     void createQuantumScreen();
 
     // metodos auxiliares
-    int checkEntryNumber(int firstOption, int lastOption);
     unsigned int checkEntryNumber(unsigned int firstNumber, unsigned int lastOption);
     std::string checkEntryString(std::vector<std::string> targets); // TO-DO: erro de laco infinito ao executar
     void clearTerminal();

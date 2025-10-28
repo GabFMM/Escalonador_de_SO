@@ -93,7 +93,7 @@ void Menu::createArquiveScreen()
 
     std::cout << arquiveText << std::endl;
 
-    int option = checkEntryNumber(1, 2);
+    int option = checkEntryNumber((unsigned int)1, (unsigned int)2);
 
     clearTerminal();
 
@@ -134,7 +134,7 @@ void Menu::createConfirmationScreen(const std::vector<TCB*>& tasks)
     std::flush(std::cout);
 
     std::cout << "Press any key to execute the simulator." << std::endl;
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // limpa o buffer do cout
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // limpa o buffer do cin
     std::cin.get();
 
     clearTerminal();
@@ -165,7 +165,7 @@ void Menu::createAlgorithmScreen()
 
     std::cout << algorithmText << std::endl;
 
-    simulator->setAlgorithmScheduler(checkEntryNumber(1, 3));
+    simulator->setAlgorithmScheduler(checkEntryNumber((unsigned int)1, (unsigned int)3));
 
     clearTerminal();
 }
@@ -196,7 +196,12 @@ void Menu::createTaskScreen()
             if(numTasks == 0){
                 option = "Y";
 
-                std::cout << "\nIt's not possible to iniciate the simulator with 0 (zero) tasks.\n" << std::endl;
+                std::cout 
+                    << "\nIt's not possible to iniciate the simulator with 0 (zero) tasks.\n" 
+                    << "Press Enter to continue.\n" <<
+                std::endl;
+
+                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // limpa o buffer do cin
                 std::cin.get();
                 
                 clearTerminal();
@@ -243,20 +248,20 @@ void Menu::createTaskScreen()
             std::cout << "\nTask ID: " << numTasks << std::endl;
             std::cout << colorText << std::endl;
 
-            task.setColor(checkEntryNumber(1, 6));
+            task.setColor(checkEntryNumber((unsigned int)1, (unsigned int)6));
 
             std::cout << "\nEnter the time instant that the task enters the simulator:" << std::endl;
-            std::cin >> num;
+            num = checkEntryNumber((unsigned int)0, std::numeric_limits<unsigned int>::max());
 
             task.setEntryTime(num);
 
             std::cout << "\nEnter the task duration:" << std::endl;
-            std::cin >> num;
+            num = checkEntryNumber((unsigned int)0, std::numeric_limits<unsigned int>::max());
 
             task.setDuration(num);
 
             std::cout << "\nEnter the task priority:" << std::endl;
-            std::cin >> num;
+            num = checkEntryNumber((unsigned int)0, std::numeric_limits<unsigned int>::max());
 
             task.setPriority(num);
 
@@ -276,39 +281,31 @@ void Menu::createQuantumScreen()
 
     std::cout << quantumText << std::endl;
 
-    simulator->setQuantum(checkEntryNumber((unsigned int)0, (unsigned int)4294967294));
+    simulator->setQuantum(checkEntryNumber((unsigned int)0, std::numeric_limits<unsigned int>::max()));
 
     clearTerminal();
-}
-
-// Dada uma sequencia de opcoes, verifica se a entrada do usuario eh valida,
-// e retorna a opcao escolhida
-int Menu::checkEntryNumber(int firstOption, int lastOption)
-{
-    int option;
-    std::cin >> option;
-
-    while(option < firstOption || option > lastOption){
-        std::cout << "\nInvalid option. Try again.\n" << std::endl;
-        std::cin >> option;
-    }
-
-    return option;
 }
 
 // Dada um intervalo de numeros, verifica se a entrada do usuario eh valida,
 // e retorna o numero escolhido
 unsigned int Menu::checkEntryNumber(unsigned int firstNumber, unsigned int lastOption)
 {
-    unsigned int num;
+    int64_t num;
     std::cin >> num;
 
-    while(num < firstNumber || num > lastOption){
+    // std::cin.fail serve para verificar se houve uma entrada invalida. Por exemplo, uma palavra
+    while(std::cin.fail() || num < (int64_t)firstNumber || num > (int64_t)lastOption){
         std::cout << "\nInvalid option. Try again.\n" << std::endl;
+
+        std::cin.clear(); // limpa flags de erro
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // limpa o buffer do cin
+
         std::cin >> num;
     }
 
-    return num;
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // limpa o buffer do cin
+
+    return (unsigned int)num;
 }
 
 // Dada um conjunto de strings desejadas, verifica se a entrada do usuario eh valida
@@ -326,6 +323,7 @@ std::string Menu::checkEntryString(std::vector<std::string> targets)
         }
 
         std::cout << "\nInvalid option. Try again.\n" << std::endl;
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // limpa o buffer do cin
     }
 }
 
