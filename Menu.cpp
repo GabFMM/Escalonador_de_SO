@@ -209,33 +209,62 @@ void Menu::createTaskScreen()
             }
         }
 
-        TCB task;
-        int num;
+        clearTerminal();
 
-        task.setId(numTasks);
+        std::cout 
+            << "Do you want to create a standard task? (Y or N)\n\n"
+            << "If yes, then the new task will have the following settings:\n\n"
+            << "ID: " << numTasks << "\n"
+            << "Color: 1 (red)\n"
+            << "Entry time: 1\n"
+            << "Duration: 1\n"
+            << "Priority: 1\n" <<
+        std::endl;
 
-        std::cout << "\nTask ID: " << numTasks << std::endl;
-        std::cout << colorText << std::endl;
+        std::string res = checkEntryString(targets);
 
-        task.setColor(checkEntryNumber(1, 6));
+        if(res == "Y" || res == "y"){
+            TCB task;
+            task.setId(numTasks);
+            task.setColor(1);
+            task.setEntryTime(1);
+            task.setDuration(1);
+            task.setPriority(1);
 
-        std::cout << "\nEnter the time instant that the task enters the simulator:" << std::endl;
-        std::cin >> num;
+            numTasks++;
+            simulator->addTask(task);
+        }
+        else if(res == "N" || res == "n"){
+            clearTerminal();
 
-        task.setEntryTime(num);
+            TCB task;
+            int num;
 
-        std::cout << "\nEnter the task duration:" << std::endl;
-        std::cin >> num;
+            task.setId(numTasks);
 
-        task.setDuration(num);
+            std::cout << "\nTask ID: " << numTasks << std::endl;
+            std::cout << colorText << std::endl;
 
-        std::cout << "\nEnter the task priority:" << std::endl;
-        std::cin >> num;
+            task.setColor(checkEntryNumber(1, 6));
 
-        task.setPriority(num);
+            std::cout << "\nEnter the time instant that the task enters the simulator:" << std::endl;
+            std::cin >> num;
 
-        numTasks++;
-        simulator->addTask(task);
+            task.setEntryTime(num);
+
+            std::cout << "\nEnter the task duration:" << std::endl;
+            std::cin >> num;
+
+            task.setDuration(num);
+
+            std::cout << "\nEnter the task priority:" << std::endl;
+            std::cin >> num;
+
+            task.setPriority(num);
+
+            numTasks++;
+            simulator->addTask(task);
+        }
 
         clearTerminal();
     }
