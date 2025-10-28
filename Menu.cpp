@@ -207,7 +207,7 @@ void Menu::createTaskScreen()
             else{
                 break;
             }
-        };
+        }
 
         TCB task;
         int num;

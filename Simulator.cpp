@@ -116,7 +116,34 @@ void Simulator::executeDebugger()
             // "executa" a tarefa no processador
             currentTask = scheduler->getNextTask();
         }
-        // Verifica se o tempo restante da tarefa executada acabou 
+        // Verifica se o tempo do quantum acabou
+        else if(globalClock % extraInfo.getQuantum() == 0 && currentTask != nullptr){
+            // desenha na imagem o que aconteceu no processador ate agora (interrupcao)
+            // em base na tarefa atual
+            imageGenerator->addRectTask(currentTask->getId(), currentTask->getColor(), globalClock, timeLastInterrupt);
+
+            timeLastInterrupt = globalClock;
+
+            // Atualiza o tempo restante da tarefa executada
+            currentTask->setRemainingTime(currentTask->getRemainingTime() - deltaTime);
+
+            if(currentTask->getRemainingTime() <= 0){
+                // calcula o tempo de fim da tarefa
+                currentTask->setEndTime(globalClock);
+
+                updateTask(currentTask);
+
+                id = currentTask->getId();
+
+                // remove a tarefa na fila de prontas do simulator
+                removeTask(id);
+
+                // remove a tarefa na fila de prontas do escalonador
+                scheduler->removeTask(id);
+            }
+
+            currentTask = scheduler->getNextTask();
+        }
         else if(currentTask != nullptr){
             currentTask->setRemainingTime(currentTask->getRemainingTime() - deltaTime);
             updateTask(currentTask);
@@ -229,7 +256,34 @@ void Simulator::executeNoDebugger()
             // "executa" a tarefa no processador
             currentTask = scheduler->getNextTask();
         }
-        // Verifica se o tempo restante da tarefa executada acabou 
+        // Verifica se o tempo do quantum acabou
+        else if(globalClock % extraInfo.getQuantum() == 0 && currentTask != nullptr){
+            // desenha na imagem o que aconteceu no processador ate agora (interrupcao)
+            // em base na tarefa atual
+            imageGenerator->addRectTask(currentTask->getId(), currentTask->getColor(), globalClock, timeLastInterrupt);
+
+            timeLastInterrupt = globalClock;
+
+            // Atualiza o tempo restante da tarefa executada
+            currentTask->setRemainingTime(currentTask->getRemainingTime() - deltaTime);
+
+            if(currentTask->getRemainingTime() <= 0){
+                // calcula o tempo de fim da tarefa
+                currentTask->setEndTime(globalClock);
+
+                updateTask(currentTask);
+
+                int id = currentTask->getId();
+
+                // remove a tarefa na fila de prontas do simulator
+                removeTask(id);
+
+                // remove a tarefa na fila de prontas do escalonador
+                scheduler->removeTask(id);
+            }
+
+            currentTask = scheduler->getNextTask();
+        }
         else if(currentTask != nullptr){
             currentTask->setRemainingTime(currentTask->getRemainingTime() - deltaTime);
 
@@ -249,9 +303,6 @@ void Simulator::executeNoDebugger()
 
                 // "executa" outra tarefa no processador
                 currentTask = scheduler->getNextTask();
-
-                if(currentTask != nullptr)
-                    currentTask->setLastUsedTime(globalClock);
             }
         }
         // atualiza relogio
