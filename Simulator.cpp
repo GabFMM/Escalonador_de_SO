@@ -724,7 +724,7 @@ void Simulator::setAlgorithmScheduler(std::string algorithm)
     if(scheduler == nullptr)
         scheduler = new Scheduler();
 
-    if(algorithm == "FIFO")
+    if(algorithm == "FIFO" || algorithm == "FCFS")
         scheduler->setAlgorithm(Scheduler::Algorithm::FIFO);
     else if(algorithm == "SRTF")
         scheduler->setAlgorithm(Scheduler::Algorithm::SRTF);
