@@ -586,10 +586,27 @@ std::vector<TCB*> Simulator::loadArquive() {
         };
 
         int tmp;
+        
         // ID
-        if (!safeGetInt(tmp)) { 
+        // Diferente dos demais, pois o id pode comecar com t ou nao
+        if(std::getline(ls, field, ';')){
+            remove_cr(field);
+            trim(field);
+
+            if(!field.empty()){
+                if(field[0] == 't')
+                    field.erase(field.begin());
+                
+                tmp = std::stoi(field);
+            }
+            else{
+                std::cerr << "Bad or missing ID in line: " << line << std::endl; 
+                continue; 
+            }
+        }
+        else{
             std::cerr << "Bad or missing ID in line: " << line << std::endl; 
-            continue; 
+            continue;
         }
 
         // verifica se o ID ja existe
