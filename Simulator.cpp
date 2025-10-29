@@ -597,7 +597,13 @@ std::vector<TCB*> Simulator::loadArquive() {
                 if(field[0] == 't')
                     field.erase(field.begin());
                 
-                tmp = std::stoi(field);
+                try{
+                    tmp = std::stoi(field);
+                }
+                catch (const std::exception &e){
+                    std::cerr << "Bad or missing ID in line: " << line << std::endl; 
+                    continue;
+                }
             }
             else{
                 std::cerr << "Bad or missing ID in line: " << line << std::endl; 
