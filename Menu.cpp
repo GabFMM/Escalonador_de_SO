@@ -281,7 +281,7 @@ void Menu::createQuantumScreen()
 
     std::cout << quantumText << std::endl;
 
-    simulator->setQuantum(checkEntryNumber((unsigned int)0, std::numeric_limits<unsigned int>::max()));
+    simulator->setQuantum(checkEntryNumber((unsigned int)1, std::numeric_limits<unsigned int>::max()));
 
     clearTerminal();
 }

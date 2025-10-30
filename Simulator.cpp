@@ -555,7 +555,12 @@ std::vector<TCB*> Simulator::loadArquive() {
         return std::vector<TCB*>();
     }
     try {
-        extraInfo.setQuantum(std::stoi(quantumStr));
+        int num = std::stoi(quantumStr);
+        if(num == 0){
+            std::cerr << "Invalid quantum value: '" << quantumStr << "'" << std::endl;
+            return std::vector<TCB*>();
+        }
+        extraInfo.setQuantum(num);
     } catch (const std::exception &e) {
         std::cerr << "Invalid quantum value: '" << quantumStr << "'" << std::endl;
         return std::vector<TCB*>();
