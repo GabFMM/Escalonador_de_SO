@@ -3,17 +3,19 @@
 TCB::TCB() :
 id(0),
 color(0),
+strColor(6, ' '),
 entryTime(0),
 duration(0),
 priority(0),
 remainingTime(0),
 endTime(std::numeric_limits<unsigned int>::max()){
-
+    
 }
 
 TCB::~TCB(){
     id = 0;
     color = 0;
+    strColor.clear();
     entryTime = 0;
     duration = 0;
     priority = 0;
@@ -28,6 +30,11 @@ void TCB::setId(int id) {
 
 void TCB::setColor(int color) {
     this->color = color;
+}
+
+void TCB::setColor(std::string str)
+{
+    this->strColor = str;
 }
 
 void TCB::setEntryTime(unsigned int entryTime) {
@@ -65,6 +72,11 @@ int TCB::getColor() const {
     return color;
 }
 
+std::string TCB::getStrColor() const
+{
+    return strColor;
+}
+
 unsigned int TCB::getEntryTime() const {
     return entryTime;
 }
@@ -98,6 +110,7 @@ void TCB::copyTCB(const TCB &t)
         // Copie aqui os atributos de 't' para 'this'
         id = t.id;
         color = t.color;
+        strColor = t.strColor;
         entryTime = t.entryTime;
         duration = t.duration;
         priority = t.priority;
@@ -115,6 +128,7 @@ TCB& TCB::operator=(const TCB &t)
         // Copie aqui os atributos de 't' para 'this'
         id = t.id;
         color = t.color;
+        strColor = t.strColor;
         entryTime = t.entryTime;
         duration = t.duration;
         priority = t.priority;

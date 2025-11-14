@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <limits>
+#include <variant>
 #include "TCB.h"
 
 class Simulator;
@@ -40,6 +41,7 @@ public:
     // metodos auxiliares
     unsigned int checkEntryNumber(unsigned int firstNumber, unsigned int lastOption);
     std::string checkEntryString(std::vector<std::string> targets); // TO-DO: erro de laco infinito ao executar
+    std::variant<unsigned int, std::string> checkEntryColor(unsigned int firstNumber, unsigned int lastOption);
     void clearTerminal();
     void setSimulator(Simulator* s);
 };

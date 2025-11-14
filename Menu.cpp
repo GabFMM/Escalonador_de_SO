@@ -44,7 +44,9 @@ Minimum number of tasks for the simulator to work: 1
 )";
 
 const std::string Menu::colorText = R"(
-Select the color of the new task:
+Select or type a hexadecimal RGB color for the new task:
+
+Standard colors:
 
 1 -> Red
 2 -> Green
@@ -52,8 +54,6 @@ Select the color of the new task:
 4 -> Blue
 5 -> Magenta
 6 -> Cyan
-
-Enter the desired option (number):
 )";
 
 const std::string Menu::quantumText = R"(
@@ -122,13 +122,25 @@ void Menu::createConfirmationScreen(const std::vector<TCB*>& tasks)
     // Todas as informacoes de cada uma das tarefas sao mostradas no terminal 
     size_t tam = tasks.size();
     for(int i = 0; i < tam; i++){
-        std::cout << 
-            "ID: " << tasks[i]->getId() << "\n" <<
-            "Color: " << tasks[i]->getColor() << "\n" <<
-            "Entry time: " << tasks[i]->getEntryTime() << "\n" <<
-            "Duration: " << tasks[i]->getDuration() << "\n" <<
-            "Priority: " << tasks[i]->getPriority() << "\n" <<
-        std::endl;
+        // Verifica o tipo da cor
+        if(tasks[i]->getColor() != 0){
+            std::cout << 
+                "ID: " << tasks[i]->getId() << "\n" <<
+                "Color: " << tasks[i]->getColor() << "\n" <<
+                "Entry time: " << tasks[i]->getEntryTime() << "\n" <<
+                "Duration: " << tasks[i]->getDuration() << "\n" <<
+                "Priority: " << tasks[i]->getPriority() << "\n" <<
+            std::endl;
+        }
+        else{
+            std::cout << 
+                "ID: " << tasks[i]->getId() << "\n" <<
+                "Color: " << tasks[i]->getStrColor() << "\n" <<
+                "Entry time: " << tasks[i]->getEntryTime() << "\n" <<
+                "Duration: " << tasks[i]->getDuration() << "\n" <<
+                "Priority: " << tasks[i]->getPriority() << "\n" <<
+            std::endl;
+        }
     }
 
     std::flush(std::cout);
@@ -248,7 +260,15 @@ void Menu::createTaskScreen()
             std::cout << "\nTask ID: " << numTasks << std::endl;
             std::cout << colorText << std::endl;
 
-            task.setColor(checkEntryNumber((unsigned int)1, (unsigned int)6));
+            // var pode assumir um dos dois possiveis valores (unsigned int ou string)
+            std::variant<unsigned int, std::string> var = checkEntryColor((unsigned int)1, (unsigned int)6);
+
+            // se var for unsigned int
+            if(std::holds_alternative<unsigned int>(var))
+                task.setColor(std::get<unsigned int>(var));
+            // se var for string
+            else if(std::holds_alternative<std::string>(var))
+                task.setColor(std::get<std::string>(var));
 
             std::cout << "\nEnter the time instant that the task enters the simulator:" << std::endl;
             num = checkEntryNumber((unsigned int)0, std::numeric_limits<unsigned int>::max());
@@ -324,6 +344,41 @@ std::string Menu::checkEntryString(std::vector<std::string> targets)
 
         std::cout << "\nInvalid option. Try again.\n" << std::endl;
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // limpa o buffer do cin
+    }
+}
+
+std::variant<unsigned int, std::string> Menu::checkEntryColor(unsigned int firstNumber, unsigned int lastOption)
+{
+    while (true) {
+        std::string str;
+        std::cin >> str;
+
+        // 1. Entrada numérica (formato antigo)
+        if (str.size() == 1 && std::isdigit(str[0])) {
+            unsigned int option = str[0] - '0';  // conversão rápida
+
+            if (option >= firstNumber && option <= lastOption)
+                return option;
+
+            std::cout << "\nInvalid entry.\n";
+        }
+        // 2. Entrada hexadecimal (formato novo)
+        else if (str.size() == 6 
+                 && std::all_of(str.begin(), str.end(), [](unsigned char c){
+                        return std::isxdigit(c); 
+                    }))
+        {
+            return str;
+        }
+        // 3. Qualquer outra coisa
+        else {
+            std::cout << "\nInvalid entry.\n";
+        }
+
+        std::cout << "\nTry again.\n" << std::endl;
+
+        std::cin.clear();
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     }
 }
 

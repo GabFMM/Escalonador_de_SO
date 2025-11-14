@@ -83,7 +83,10 @@ void Simulator::executeDebugger()
             if(currentTask != nullptr){
                 // desenha na imagem o que aconteceu no processador ate agora (interrupcao)
                 // em base na tarefa atual
-                imageGenerator->addRectTask(currentTask->getId(), currentTask->getColor(), globalClock, timeLastInterrupt);
+                if(currentTask->getColor() != 0) // verifica o formato da cor (antigo ou hexadecimal)
+                    imageGenerator->addRectTask(currentTask->getId(), currentTask->getColor(), globalClock, timeLastInterrupt);
+                else
+                    imageGenerator->addRectTask(currentTask->getId(), currentTask->getStrColor(), globalClock, timeLastInterrupt);
 
                 // Atualiza o tempo restante da tarefa executada
                 currentTask->setRemainingTime(currentTask->getRemainingTime() - deltaTime);
@@ -124,7 +127,10 @@ void Simulator::executeDebugger()
         else if(globalClock % extraInfo.getQuantum() == 0 && currentTask != nullptr){
             // desenha na imagem o que aconteceu no processador ate agora (interrupcao)
             // em base na tarefa atual
-            imageGenerator->addRectTask(currentTask->getId(), currentTask->getColor(), globalClock, timeLastInterrupt);
+            if(currentTask->getColor() != 0) // verifica o formato da cor (antigo ou hexadecimal)
+                imageGenerator->addRectTask(currentTask->getId(), currentTask->getColor(), globalClock, timeLastInterrupt);
+            else
+                imageGenerator->addRectTask(currentTask->getId(), currentTask->getStrColor(), globalClock, timeLastInterrupt);
 
             timeLastInterrupt = globalClock;
 
@@ -155,7 +161,10 @@ void Simulator::executeDebugger()
             if(currentTask->getRemainingTime() <= 0){
                 // desenha na imagem o que aconteceu no processador ate agora (interrupcao)
                 // em base na tarefa atual
-                imageGenerator->addRectTask(currentTask->getId(), currentTask->getColor(), globalClock, timeLastInterrupt);
+                if(currentTask->getColor() != 0) // verifica o formato da cor (antigo ou hexadecimal)
+                    imageGenerator->addRectTask(currentTask->getId(), currentTask->getColor(), globalClock, timeLastInterrupt);
+                else
+                    imageGenerator->addRectTask(currentTask->getId(), currentTask->getStrColor(), globalClock, timeLastInterrupt);
 
                 timeLastInterrupt = globalClock;
 
@@ -230,7 +239,10 @@ void Simulator::executeNoDebugger()
             if(currentTask != nullptr){
                 // desenha na imagem o que aconteceu no processador ate agora (interrupcao)
                 // em base na tarefa atual
-                imageGenerator->addRectTask(currentTask->getId(), currentTask->getColor(), globalClock, timeLastInterrupt);
+                if(currentTask->getColor() != 0) // verifica o formato da cor (antigo ou hexadecimal)
+                    imageGenerator->addRectTask(currentTask->getId(), currentTask->getColor(), globalClock, timeLastInterrupt);
+                else
+                    imageGenerator->addRectTask(currentTask->getId(), currentTask->getStrColor(), globalClock, timeLastInterrupt);
 
                 // Atualiza o tempo restante da tarefa executada
                 currentTask->setRemainingTime(currentTask->getRemainingTime() - deltaTime);
@@ -265,7 +277,10 @@ void Simulator::executeNoDebugger()
         else if(globalClock % extraInfo.getQuantum() == 0 && currentTask != nullptr){
             // desenha na imagem o que aconteceu no processador ate agora (interrupcao)
             // em base na tarefa atual
-            imageGenerator->addRectTask(currentTask->getId(), currentTask->getColor(), globalClock, timeLastInterrupt);
+            if(currentTask->getColor() != 0) // verifica o formato da cor (antigo ou hexadecimal)
+                imageGenerator->addRectTask(currentTask->getId(), currentTask->getColor(), globalClock, timeLastInterrupt);
+            else
+                imageGenerator->addRectTask(currentTask->getId(), currentTask->getStrColor(), globalClock, timeLastInterrupt);
 
             timeLastInterrupt = globalClock;
 
@@ -295,7 +310,10 @@ void Simulator::executeNoDebugger()
             if(currentTask->getRemainingTime() <= 0){
                 // desenha na imagem o que aconteceu no processador ate agora (interrupcao)
                 // em base na tarefa atual
-                imageGenerator->addRectTask(currentTask->getId(), currentTask->getColor(), globalClock, timeLastInterrupt);
+                if(currentTask->getColor() != 0) // verifica o formato da cor (antigo ou hexadecimal)
+                    imageGenerator->addRectTask(currentTask->getId(), currentTask->getColor(), globalClock, timeLastInterrupt);
+                else
+                    imageGenerator->addRectTask(currentTask->getId(), currentTask->getStrColor(), globalClock, timeLastInterrupt);
 
                 timeLastInterrupt = globalClock;
 
@@ -577,6 +595,7 @@ std::vector<TCB*> Simulator::loadArquive() {
         std::string field;
         TCB* task = new TCB();
 
+        // funcoes lambda auxiliares
         auto safeGetInt = [&](int &out) -> bool {
             if (!std::getline(ls, field, ';')) return false;
             remove_cr(field);
@@ -590,29 +609,31 @@ std::vector<TCB*> Simulator::loadArquive() {
             }
         };
 
+        auto safeGetString = [&](std::string &out) -> bool {
+            if(!std::getline(ls, field, ';')) return false;
+            remove_cr(field);
+            trim(field);
+            if(field.empty()) return false;
+            out.clear(); // garantia
+            out = field;
+            return true;
+        };
+
         int tmp;
+        std::string strTmp;
         
         // ID
         // Diferente dos demais, pois o id pode comecar com t ou nao
-        if(std::getline(ls, field, ';')){
-            remove_cr(field);
-            trim(field);
-
-            if(!field.empty()){
-                if(field[0] == 't')
-                    field.erase(field.begin());
-                
-                try{
-                    tmp = std::stoi(field);
-                }
-                catch (const std::exception &e){
-                    std::cerr << "Bad or missing ID in line: " << line << std::endl; 
-                    continue;
-                }
+        if(safeGetString(strTmp)){
+            if(strTmp[0] == 't')
+                strTmp.erase(strTmp.begin());
+            
+            try{
+                tmp = std::stoi(strTmp);
             }
-            else{
+            catch (const std::exception &e){
                 std::cerr << "Bad or missing ID in line: " << line << std::endl; 
-                continue; 
+                continue;
             }
         }
         else{
@@ -632,12 +653,21 @@ std::vector<TCB*> Simulator::loadArquive() {
         task->setId(tmp);
         
         // Color
-        if (!safeGetInt(tmp)) { 
-            std::cerr << "Bad or missing Color in line: " << line << std::endl; 
-            continue; 
+        if(safeGetString(strTmp)){
+            // Verifica se esta no formato hexadecimal
+            if(strTmp.size() == 6 && std::all_of(strTmp.begin(), strTmp.end(), [](unsigned char c){return std::isxdigit(c);})){
+                task->setColor(strTmp);
+            }
+            // Verifica se esta no formato antigo
+            else if(strTmp[0] == '1' || strTmp[0] == '2' || strTmp[0] == '3' || strTmp[0] == '4' || strTmp[0] == '5' || strTmp[0] == '6'){
+                task->setColor(strTmp[0] - '0');
+            }
+            else{
+                std::cerr << "Bad or missing Color in line: " << line << std::endl; 
+                continue; 
+            }
         }
-        task->setColor(tmp);
-        
+
         // Entry time
         if (!safeGetInt(tmp)) { 
             std::cerr << "Bad or missing EntryTime in line: " << line << std::endl; 

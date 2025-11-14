@@ -35,6 +35,7 @@ public:
     void createAxis(size_t numTasks, std::vector<unsigned int> idTasks, unsigned int sumDurationTasks, unsigned int maxEntryTime);
 
     void addRectTask(const unsigned int& idTask, const unsigned int& colorTask, unsigned int timeNow, unsigned int timeLastInterrupt);
+    void addRectTask(const unsigned int& idTask, const std::string& colorTask, unsigned int timeNow, unsigned int timeLastInterrupt);
 
     std::string toStrColor(const unsigned int& color);
 

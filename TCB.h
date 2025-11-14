@@ -1,18 +1,20 @@
 #pragma once
 
 #include <limits>
+#include <string>
 
 class TCB{
 private:
     unsigned int id;
-    int color;
+    int color;            // formato antigo
+    std::string strColor; // formato hexadecimal para RGB
     unsigned int entryTime;
     unsigned int lastUsedTime;
     unsigned int duration;
     unsigned int priority;
     long long remainingTime;
     unsigned int endTime;
-    // Obs: novo atributo -> mudar sobrecarga do operador=
+    // Obs: novo atributo -> mudar sobrecarga do operador= e metodo copyTCB
 
 public:
     TCB();
@@ -21,6 +23,7 @@ public:
     // Setters
     void setId(int id);
     void setColor(int color);
+    void setColor(std::string str);
     void setEntryTime(unsigned int entryTime);
     void setLastUsedTime(unsigned int lastUsedTime);
     void setDuration(unsigned int duration);
@@ -31,6 +34,7 @@ public:
     // Getters
     int getId() const;
     int getColor() const;
+    std::string getStrColor() const;
     unsigned int getEntryTime() const;
     unsigned int getLastUsedTime() const;
     unsigned int getDuration() const;
