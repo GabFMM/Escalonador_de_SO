@@ -18,6 +18,8 @@ private:
     static const std::string taskText;
     static const std::string chosenModeText;
     static const std::string quantumText;
+    static const std::string editText;
+    static const std::string editTaskText;
 
     // New tasks
     static const std::string colorText;
@@ -37,11 +39,13 @@ public:
     void createAlgorithmScreen();
     void createTaskScreen();
     void createQuantumScreen();
+    void createEditScreen();
 
     // metodos auxiliares
     unsigned int checkEntryNumber(unsigned int firstNumber, unsigned int lastOption);
-    std::string checkEntryString(std::vector<std::string> targets); // TO-DO: erro de laco infinito ao executar
+    std::string checkEntryString(std::vector<std::string> targets);
     std::variant<unsigned int, std::string> checkEntryColor(unsigned int firstNumber, unsigned int lastOption);
     void clearTerminal();
     void setSimulator(Simulator* s);
+    void showTasks();
 };

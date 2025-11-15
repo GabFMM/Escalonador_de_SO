@@ -21,7 +21,7 @@ public:
     ~TCB();
 
     // Setters
-    void setId(int id);
+    void setId(unsigned int id);
     void setColor(int color);
     void setColor(std::string str);
     void setEntryTime(unsigned int entryTime);

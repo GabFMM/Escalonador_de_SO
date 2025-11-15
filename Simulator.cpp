@@ -730,6 +730,85 @@ void Simulator::updateTask(const TCB *task)
     tasks[i]->copyTCB(*task);
 }
 
+/*
+Requisitos:
+o idTask tem que existir em tasks
+o newId nao pode ser igual a outro id de alguma tarefa
+*/
+void Simulator::updateTaskId(const unsigned int &idTask, const unsigned int &newId)
+{
+    size_t tam = tasks.size();
+    size_t i;
+    for(i = 0; tasks[i]->getId() != idTask; i++);
+
+    tasks[i]->setId(newId);
+}
+
+/*
+Requisitos:
+o idTask tem que existir em tasks
+*/
+void Simulator::updateTaskColor(const unsigned int &idTask, const unsigned int &newColor)
+{
+    size_t tam = tasks.size();
+    size_t i;
+    for(i = 0; tasks[i]->getId() != idTask; i++);
+
+    tasks[i]->setColor(newColor);
+}
+
+/*
+Requisitos:
+o idTask tem que existir em tasks
+*/
+void Simulator::updateTaskColor(const unsigned int &idTask, const std::string &newStrColor)
+{
+    size_t tam = tasks.size();
+    size_t i;
+    for(i = 0; tasks[i]->getId() != idTask; i++);
+
+    tasks[i]->setColor(newStrColor);
+}
+
+/*
+Requisitos:
+o idTask tem que existir em tasks
+*/
+void Simulator::updateTaskEntryTime(const unsigned int &idTask, const unsigned int &newEntryTime)
+{
+    size_t tam = tasks.size();
+    size_t i;
+    for(i = 0; tasks[i]->getId() != idTask; i++);
+
+    tasks[i]->setEntryTime(newEntryTime);
+}
+
+/*
+Requisitos:
+o idTask tem que existir em tasks
+*/
+void Simulator::updateTaskDuration(const unsigned int &idTask, const unsigned int &newDuration)
+{
+    size_t tam = tasks.size();
+    size_t i;
+    for(i = 0; tasks[i]->getId() != idTask; i++);
+
+    tasks[i]->setDuration(newDuration);
+}
+
+/*
+Requisitos:
+o idTask tem que existir em tasks
+*/
+void Simulator::updateTaskPriority(const unsigned int &idTask, const unsigned int &newPriority)
+{
+    size_t tam = tasks.size();
+    size_t i;
+    for(i = 0; tasks[i]->getId() != idTask; i++);
+
+    tasks[i]->setDuration(newPriority);
+}
+
 void Simulator::setAlgorithmScheduler(int i)
 {
     if(scheduler == nullptr)

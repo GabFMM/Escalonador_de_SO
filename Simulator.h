@@ -34,9 +34,16 @@ public:
     std::vector<TCB*> loadArquive();
     void generateImage();
 
+    // manipulacao de tasks
     void addTask(TCB task);
     void removeTask(unsigned int idTask);
     void updateTask(const TCB* task);
+    void updateTaskId(const unsigned int& idTask, const unsigned int& newId);
+    void updateTaskColor(const unsigned int& idTask, const unsigned int& newColor);
+    void updateTaskColor(const unsigned int& idTask, const std::string& newStrColor);
+    void updateTaskEntryTime(const unsigned int& idTask, const unsigned int& newEntryTime);
+    void updateTaskDuration(const unsigned int& idTask, const unsigned int& newDuration);
+    void updateTaskPriority(const unsigned int& idTask, const unsigned int& newPriority);
 
     void setAlgorithmScheduler(int i); // Usado por Menu.cpp
     void setAlgorithmScheduler(std::string algorithm);

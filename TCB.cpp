@@ -24,7 +24,7 @@ TCB::~TCB(){
 }
 
 // Setters
-void TCB::setId(int id) {
+void TCB::setId(unsigned int id) {
     this->id = id;
 }
 

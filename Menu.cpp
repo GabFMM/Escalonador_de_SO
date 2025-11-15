@@ -60,6 +60,28 @@ const std::string Menu::quantumText = R"(
 What is the value of the quantum?
 )";
 
+const std::string Menu::editText = R"(
+What setting do you want change?
+
+1 -> Scheduler algorithm
+2 -> Quantum duration
+3 -> Tasks information
+
+Enter the desired option (number):
+)";
+
+const std::string Menu::editTaskText = R"(
+What task information do you want change?
+
+1 -> ID
+2 -> Color
+3 -> Entry time
+4 -> Duration
+5 -> Priority
+
+Enter the desired option (number):
+)";
+
 Menu::Menu() : simulator(nullptr)
 {
 }
@@ -120,34 +142,24 @@ void Menu::createConfirmationScreen(const std::vector<TCB*>& tasks)
     std::cout << "Tasks:\n" << std::endl;
 
     // Todas as informacoes de cada uma das tarefas sao mostradas no terminal 
-    size_t tam = tasks.size();
-    for(int i = 0; i < tam; i++){
-        // Verifica o tipo da cor
-        if(tasks[i]->getColor() != 0){
-            std::cout << 
-                "ID: " << tasks[i]->getId() << "\n" <<
-                "Color: " << tasks[i]->getColor() << "\n" <<
-                "Entry time: " << tasks[i]->getEntryTime() << "\n" <<
-                "Duration: " << tasks[i]->getDuration() << "\n" <<
-                "Priority: " << tasks[i]->getPriority() << "\n" <<
-            std::endl;
-        }
-        else{
-            std::cout << 
-                "ID: " << tasks[i]->getId() << "\n" <<
-                "Color: " << tasks[i]->getStrColor() << "\n" <<
-                "Entry time: " << tasks[i]->getEntryTime() << "\n" <<
-                "Duration: " << tasks[i]->getDuration() << "\n" <<
-                "Priority: " << tasks[i]->getPriority() << "\n" <<
-            std::endl;
-        }
-    }
+    showTasks();
 
     std::flush(std::cout);
 
-    std::cout << "Press any key to execute the simulator." << std::endl;
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // limpa o buffer do cin
-    std::cin.get();
+    std::cout << "Choose an option:\n\n"
+              << "1 -> Add more tasks\n"
+              << "2 -> Edit the settings\n"
+              << "3 -> Confirm the settings\n" << std::endl;
+    
+    unsigned int option = checkEntryNumber((unsigned int)1, (unsigned int)3);
+    if(option == 1){
+        createTaskScreen();
+        createConfirmationScreen(simulator->getTasks());
+    }
+    else if(option == 2){
+        createEditScreen();
+        createConfirmationScreen(simulator->getTasks());
+    }
 
     clearTerminal();
 }
@@ -188,7 +200,7 @@ void Menu::createTaskScreen()
 
     std::cout << taskText << std::endl;
 
-    int numTasks = 0;
+    int numTasks = simulator->getTasks().size();
     std::string option = "Y";
 
     while(option == "Y" || option == "y"){
@@ -226,10 +238,15 @@ void Menu::createTaskScreen()
 
         clearTerminal();
 
+        // Ocorre na etapa de edicao de tarefas
+        unsigned int standardId = numTasks;
+        while(simulator->existId(standardId))
+            standardId = simulator->modifyId(standardId);
+
         std::cout 
             << "Do you want to create a standard task? (Y or N)\n\n"
             << "If yes, then the new task will have the following settings:\n\n"
-            << "ID: " << numTasks << "\n"
+            << "ID: " << standardId << "\n"
             << "Color: 1 (red)\n"
             << "Entry time: 1\n"
             << "Duration: 1\n"
@@ -240,7 +257,7 @@ void Menu::createTaskScreen()
 
         if(res == "Y" || res == "y"){
             TCB task;
-            task.setId(numTasks);
+            task.setId(standardId);
             task.setColor(1);
             task.setEntryTime(1);
             task.setDuration(1);
@@ -302,6 +319,156 @@ void Menu::createQuantumScreen()
     std::cout << quantumText << std::endl;
 
     simulator->setQuantum(checkEntryNumber((unsigned int)1, std::numeric_limits<unsigned int>::max()));
+
+    clearTerminal();
+}
+
+void Menu::createEditScreen()
+{
+    clearTerminal();
+
+    std::cout << editText << std::endl;
+
+    unsigned int option = checkEntryNumber((unsigned int)1, (unsigned int)3);
+
+    clearTerminal();
+
+    if(option == 1){
+        std::cout << "Previous algorithm scheduler: " << simulator->getAlgorithmScheduler() << std::endl;
+        std::cout << algorithmText << std::endl;
+
+        simulator->setAlgorithmScheduler(checkEntryNumber((unsigned int)1, (unsigned int)3));
+    }
+    else if(option == 2){
+        std::cout << "Previous value of the quantum: " << simulator->getQuantum() << std::endl;
+        std::cout << "\nWhat is the value of the new quantum?" << std::endl;
+
+        simulator->setQuantum(checkEntryNumber((unsigned int)1, std::numeric_limits<unsigned int>::max()));
+    }
+    else{
+        std::cout << "Current tasks information:" << std::endl;
+
+        // Todas as informacoes de cada uma das tarefas sao mostradas no terminal 
+        const std::vector<TCB*> tasks = simulator->getTasks();
+        showTasks();
+
+        std::cout << "Enter the ID of the task to be edited:" << std::endl;
+        unsigned int idTask = checkEntryNumber((unsigned int)0, std::numeric_limits<unsigned int>::max());
+
+        while(!simulator->existId(idTask)){
+            std::cout << "\nThe ID " << idTask << " does not match an existing ID task." << std::endl;
+            std::cout << "Try again.\n" << std::endl;
+
+            idTask = checkEntryNumber((unsigned int)0, std::numeric_limits<unsigned int>::max());
+        }
+
+        clearTerminal();
+
+        std::cout << "Task informations:\n" << std::endl;
+
+        int i;
+        for(i = 0; tasks[i]->getId() != idTask; i++);
+        // Verifica o tipo da cor
+        if(tasks[i]->getColor() != 0){
+            std::cout << 
+                "ID: " << tasks[i]->getId() << "\n" <<
+                "Color: " << tasks[i]->getColor() << "\n" <<
+                "Entry time: " << tasks[i]->getEntryTime() << "\n" <<
+                "Duration: " << tasks[i]->getDuration() << "\n" <<
+                "Priority: " << tasks[i]->getPriority() << "\n" <<
+            std::endl;
+        }
+        else{
+            std::cout << 
+                "ID: " << tasks[i]->getId() << "\n" <<
+                "Color: " << tasks[i]->getStrColor() << "\n" <<
+                "Entry time: " << tasks[i]->getEntryTime() << "\n" <<
+                "Duration: " << tasks[i]->getDuration() << "\n" <<
+                "Priority: " << tasks[i]->getPriority() << "\n" <<
+            std::endl;
+        }
+
+        std::cout << editTaskText << std::endl;
+        option = checkEntryNumber((unsigned int)1, (unsigned int)5);
+
+        clearTerminal();
+
+        if(option == 1){
+            std::cout << "Previous ID: " << tasks[i]->getId() << std::endl;
+            std::cout << "What is the new ID value?\n" << std::endl;
+            
+            unsigned int newId = checkEntryNumber((unsigned int)0, std::numeric_limits<unsigned int>::max());
+
+            while(simulator->existId(newId)){
+                std::cout << "The ID " << newId << " already exists." << std::endl;
+                std::cout << "Try again.\n" << std::endl;
+
+                newId = checkEntryNumber((unsigned int)0, std::numeric_limits<unsigned int>::max());
+            }
+
+            // Atualiza o ID da tarefa
+            simulator->updateTaskId(tasks[i]->getId(), newId);
+        }
+        else if(option == 2){
+            if(tasks[i]->getColor() != 0)
+                std::cout << "Previous Color: " << tasks[i]->getColor() << std::endl;
+            else
+                std::cout << "Previous Color: " << tasks[i]->getStrColor() << std::endl;
+
+            std::cout << "What is the new Color value?\n" << std::endl;
+            std::cout << "Select or type a hexadecimal RGB color:\n\n"
+                      << "Standard colors:\n"
+                      << "1 -> Red\n"
+                      << "2 -> Green\n"
+                      << "3 -> Yellow\n"
+                      << "4 -> Blue\n"
+                      << "5 -> Magenta\n"
+                      << "6 -> Cyan\n" << std::endl;
+            
+            // var pode assumir um dos dois possiveis valores (unsigned int ou string)
+            std::variant<unsigned int, std::string> var = checkEntryColor((unsigned int)1, (unsigned int)6);
+
+            // se var for unsigned int
+            if(std::holds_alternative<unsigned int>(var))
+                simulator->updateTaskColor(idTask, std::get<unsigned int>(var));
+            // se var for string
+            else if(std::holds_alternative<std::string>(var))
+                simulator->updateTaskColor(idTask, std::get<unsigned int>(var));
+
+        }
+        else if(option == 3){
+            std::cout << "Previous Entry Time: " << tasks[i]->getEntryTime() << std::endl;
+            std::cout << "What is the new Entry time value?\n" << std::endl;
+            
+            unsigned int newEntryTime = checkEntryNumber((unsigned int)0, std::numeric_limits<unsigned int>::max());
+
+            simulator->updateTaskEntryTime(tasks[i]->getId(), newEntryTime);
+        }
+        else if(option == 4){
+            std::cout << "Previous Duration: " << tasks[i]->getEntryTime() << std::endl;
+            std::cout << "What is the new duration value?\n" << std::endl;
+            
+            unsigned int newDuration = checkEntryNumber((unsigned int)0, std::numeric_limits<unsigned int>::max());
+
+            simulator->updateTaskDuration(tasks[i]->getId(), newDuration);
+        }
+        else{
+            std::cout << "Previous Priority: " << tasks[i]->getEntryTime() << std::endl;
+            std::cout << "What is the new Priority value?\n" << std::endl;
+            
+            unsigned int newPriority = checkEntryNumber((unsigned int)0, std::numeric_limits<unsigned int>::max());
+
+            simulator->updateTaskPriority(tasks[i]->getId(), newPriority);
+        }
+    }
+
+    clearTerminal();
+
+    std::cout << "\nDo you wish to edit more configurations? (Y or N)" << std::endl;
+    std::string optionStr = checkEntryString(std::vector<std::string>{"Y", "y", "N", "n"});
+
+    if(optionStr == "Y" || optionStr == "y")
+        createEditScreen();
 
     clearTerminal();
 }
@@ -395,4 +562,31 @@ void Menu::setSimulator(Simulator *s)
 {
     if(s != nullptr)
         simulator = s;
+}
+
+void Menu::showTasks()
+{
+    const std::vector<TCB*>& tasks = simulator->getTasks();
+    size_t tam = tasks.size();
+    for(int i = 0; i < tam; i++){
+        // Verifica o tipo da cor
+        if(tasks[i]->getColor() != 0){
+            std::cout << 
+                "ID: " << tasks[i]->getId() << "\n" <<
+                "Color: " << tasks[i]->getColor() << "\n" <<
+                "Entry time: " << tasks[i]->getEntryTime() << "\n" <<
+                "Duration: " << tasks[i]->getDuration() << "\n" <<
+                "Priority: " << tasks[i]->getPriority() << "\n" <<
+            std::endl;
+        }
+        else{
+            std::cout << 
+                "ID: " << tasks[i]->getId() << "\n" <<
+                "Color: " << tasks[i]->getStrColor() << "\n" <<
+                "Entry time: " << tasks[i]->getEntryTime() << "\n" <<
+                "Duration: " << tasks[i]->getDuration() << "\n" <<
+                "Priority: " << tasks[i]->getPriority() << "\n" <<
+            std::endl;
+        }
+    }
 }
