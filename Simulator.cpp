@@ -76,13 +76,13 @@ void Simulator::executeDebugger()
     // enquanto houver tarefas no simulador (na "memoria")
     while(tasks.size()){
 
-        // Usado na ultima iteracao do debugger,
-        // remocoes da tarefa executada 
-        // e para mostrar as informacoes do debugger
-        int id = executeDefault(&currentTask, &globalClock, &deltaTime, &currentTaskQuantum, &timeLastInterrupt);
+        executeDefault(&currentTask, &globalClock, &deltaTime, &currentTaskQuantum, &timeLastInterrupt);
 
         // Mostra informacoes
-        chosenMode(ptasks, id, globalClock);
+        if(currentTask != nullptr)
+            chosenMode(ptasks, currentTask->getId(), globalClock);
+        else
+            chosenMode(ptasks, -1, globalClock);
 
         // atualiza relogio
         globalClock += deltaTime;
@@ -124,7 +124,6 @@ void Simulator::executeNoDebugger()
     // enquanto houver tarefas no simulador (na "memoria")
     while(tasks.size()){ 
         
-        // ignora retorno, pois nao eh usado nesse metodo
         executeDefault(&currentTask, &globalClock, &deltaTime, &currentTaskQuantum, &timeLastInterrupt);
 
         // atualiza relogio
@@ -135,12 +134,8 @@ void Simulator::executeNoDebugger()
 }
 
 // método auxiliar que ocorre igualmente em executeDebugger e executeNoDebugger
-// retorna o id da tarefa "executada" ou -1 se não houver tarefa "executada"
-unsigned int Simulator::executeDefault(TCB **currentTask, unsigned int *globalClock, const unsigned int *deltaTime, unsigned int *currentTaskQuantum, unsigned int *timeLastInterrupt)
+void Simulator::executeDefault(TCB **currentTask, unsigned int *globalClock, const unsigned int *deltaTime, unsigned int *currentTaskQuantum, unsigned int *timeLastInterrupt)
 {
-    // retorno
-    unsigned int id = -1;
-
     // verifica se o tempo atual corresponde a alguma tarefa que pode entrar no escalonador
     std::vector<unsigned int> indexTasks;
     if(canAnyTasksEnter(*globalClock, indexTasks, scheduler->getIdTasks())){
@@ -158,12 +153,17 @@ unsigned int Simulator::executeDefault(TCB **currentTask, unsigned int *globalCl
             (*currentTask)->setRemainingTime((*currentTask)->getRemainingTime() - *deltaTime);
 
             if((*currentTask)->getRemainingTime() <= 0){
+                // calcula o tempo de fim da tarefa
+                (*currentTask)->setEndTime(*globalClock);
+
+                updateTask(*currentTask);
+
                 // remove a tarefa na fila de prontas do simulator
-                id = (*currentTask)->getId();
-                removeTask(id);
+                unsigned int idErase = (*currentTask)->getId();
+                removeTask(idErase);
 
                 // remove a tarefa na fila de prontas do escalonador
-                scheduler->removeTask(id);
+                scheduler->removeTask(idErase);
 
                 // Recalcula o valor do index para nao acessar memoria invalida
                 canAnyTasksEnter(*globalClock, indexTasks, scheduler->getIdTasks());
@@ -205,12 +205,17 @@ unsigned int Simulator::executeDefault(TCB **currentTask, unsigned int *globalCl
 
             *timeLastInterrupt = *globalClock;
 
+            // calcula o tempo de fim da tarefa
+            (*currentTask)->setEndTime(*globalClock);
+
+            updateTask(*currentTask);
+
             // remove a tarefa na fila de prontas do simulator
-            id = (*currentTask)->getId();
-            removeTask(id);
+            unsigned int idErase = (*currentTask)->getId();
+            removeTask(idErase);
 
             // remove a tarefa na fila de prontas do escalonador
-            scheduler->removeTask(id);
+            scheduler->removeTask(idErase);
 
             // "executa" outra tarefa no processador
             (*currentTask) = scheduler->getNextTask();
@@ -234,8 +239,6 @@ unsigned int Simulator::executeDefault(TCB **currentTask, unsigned int *globalCl
             (*currentTask) = scheduler->getNextTask();
         }
     }
-
-    return id;
 }
 
 // função auxiliar para trim (remove espaços no início e no fim)
@@ -348,7 +351,10 @@ void Simulator::chosenMode(const std::vector<TCB*>& pTasks, const int& currentId
 
 void Simulator::showMinimumInfo(const int& currentIdTask, const unsigned int& globalClock)
 {
-    std::cout << "Current time instant: " << globalClock << "\n" << "Executed Task ID: " << currentIdTask << "\n" << std::endl;
+    std::cout 
+        << "Algorithm scheduler: " << getAlgorithmScheduler() << "\n"
+        << "Current time instant: " << globalClock << "\n"
+        << "Executed Task ID: " << currentIdTask << "\n" << std::endl;
 }
 
 void Simulator::showAllTasks(const std::vector<TCB*>& pTasks, const int& currentIdTask, const unsigned int& globalClock)
@@ -361,14 +367,27 @@ void Simulator::showAllTasks(const std::vector<TCB*>& pTasks, const int& current
     std::cout << "Tasks information:\n" << std::endl;
     size_t tam = pTasks.size();
     for(size_t i = 0; i < tam; i++){
-        std::cout << 
-        "ID: " << pTasks[i]->getId() << "\n" <<
-        "Color: " << pTasks[i]->getColor() << "\n" <<
-        "Entry time: " << pTasks[i]->getEntryTime() << "\n" <<
-        "Duration: " << pTasks[i]->getDuration() << "\n" <<
-        "Priority: " << pTasks[i]->getPriority() << "\n" <<
-        "Remaining time: " << pTasks[i]->getRemainingTime() << "\n";
+        // Verifica o tipo da cor
+        if(pTasks[i]->getColor() != 0){
+            std::cout << 
+                "ID: " << pTasks[i]->getId() << "\n" <<
+                "Color: " << pTasks[i]->getColor() << "\n" <<
+                "Entry time: " << pTasks[i]->getEntryTime() << "\n" <<
+                "Duration: " << pTasks[i]->getDuration() << "\n" <<
+                "Priority: " << pTasks[i]->getPriority() << 
+            std::endl;
+        }
+        else{
+            std::cout << 
+                "ID: " << pTasks[i]->getId() << "\n" <<
+                "Color: " << pTasks[i]->getStrColor() << "\n" <<
+                "Entry time: " << pTasks[i]->getEntryTime() << "\n" <<
+                "Duration: " << pTasks[i]->getDuration() << "\n" <<
+                "Priority: " << pTasks[i]->getPriority() << 
+            std::endl;
+        }
 
+        // Verifica se a tarefa acabou
         if(pTasks[i]->getEndTime() != std::numeric_limits<unsigned int>::max())
             std::cout << "End time: " << pTasks[i]->getEndTime() << "\n";
 
@@ -396,15 +415,25 @@ void Simulator::showReadyTasks(const std::vector<TCB*>& pTasks, const int &curre
     std::vector<TCB>& t = scheduler->getTasks();
     size_t tam = scheduler->getTasks().size();
     for(size_t i = 0; i < tam; i++){
-        std::cout << 
-        "ID: " << t[i].getId() << "\n" <<
-        "Color: " << t[i].getColor() << "\n" <<
-        "Entry time: " << t[i].getEntryTime() << "\n" <<
-        "Duration: " << t[i].getDuration() << "\n" <<
-        "Priority: " << t[i].getPriority() << "\n" <<
-        "Remaining time: " << t[i].getRemainingTime() << "\n";
-
-        std::cout << std::endl;
+        // Verifica o tipo da cor
+        if(t[i].getColor() != 0){
+            std::cout << 
+                "ID: " << t[i].getId() << "\n" <<
+                "Color: " << t[i].getColor() << "\n" <<
+                "Entry time: " << t[i].getEntryTime() << "\n" <<
+                "Duration: " << t[i].getDuration() << "\n" <<
+                "Priority: " << t[i].getPriority() << "\n" <<
+            std::endl;
+        }
+        else{
+            std::cout << 
+                "ID: " << t[i].getId() << "\n" <<
+                "Color: " << t[i].getStrColor() << "\n" <<
+                "Entry time: " << t[i].getEntryTime() << "\n" <<
+                "Duration: " << t[i].getDuration() << "\n" <<
+                "Priority: " << t[i].getPriority() << "\n" <<
+            std::endl;
+        }
     }
 
     std::cout << "Press enter to return to the options menu" << std::endl;

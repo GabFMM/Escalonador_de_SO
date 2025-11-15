@@ -31,7 +31,7 @@ public:
     void start();
     void executeDebugger();
     void executeNoDebugger();
-    unsigned int executeDefault(TCB** currentTask, unsigned int* globalClock, const unsigned int* deltaTime, unsigned int* currentTaskQuantum, unsigned int* timeLastInterrupt);
+    void executeDefault(TCB** currentTask, unsigned int* globalClock, const unsigned int* deltaTime, unsigned int* currentTaskQuantum, unsigned int* timeLastInterrupt);
     std::vector<TCB*> loadArquive();
     void generateImage();
 
