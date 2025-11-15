@@ -31,10 +31,13 @@ public:
     void start();
     void executeDebugger();
     void executeNoDebugger();
+    unsigned int executeDefault(TCB** currentTask, unsigned int* globalClock, const unsigned int* deltaTime, unsigned int* currentTaskQuantum, unsigned int* timeLastInterrupt);
     std::vector<TCB*> loadArquive();
     void generateImage();
 
     // manipulacao de tasks
+    std::vector<TCB*> getTasks() const;
+    std::vector<unsigned int> getIdTasks();
     void addTask(TCB task);
     void removeTask(unsigned int idTask);
     void updateTask(const TCB* task);
@@ -50,26 +53,25 @@ public:
 
     void setQuantum(unsigned int q);
 
-    std::vector<TCB*> getTasks() const;
     std::string getAlgorithmScheduler() const;
     unsigned int getQuantum() const;
 
     double calcTicksPerSecond();
     unsigned int sumDurationTasks();
-    std::vector<unsigned int> getIdTasks();
     unsigned int getMaxEntryTime();
 
     const bool canAnyTasksEnter(double timeNow, std::vector<unsigned int>& indexTasks, const std::vector<int>& exceptionIdTasks);
 
+    // usado no loadArquive
     void trim(std::string &s);
     void remove_cr(std::string &s);
+
     const bool existId(int id);
     int modifyId(int id);
 
     // Debugger
     void createTask(std::vector<TCB*>& pTasks, int idTask);
     void deleteTasks(std::vector<TCB*>& pTasks);
-
     void chosenMode(const std::vector<TCB*>& pTasks, const int& currentIdTask, const unsigned int& globalClock);
     void showMinimumInfo(const int& currentIdTask, const unsigned int& globalClock);
     void showAllTasks(const std::vector<TCB*>& pTasks, const int& currentIdTask, const unsigned int& globalClock);
