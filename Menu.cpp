@@ -30,9 +30,10 @@ Enter the desired option (number):
 const std::string Menu::algorithmText = R"(
 Choose an algorithm for the scheduler:
 
-1 -> FIFO (First In First Out)
+1 -> FIFO (First In First Out), FCFS (First Come First Served) or RR (Round-Robin). Depends on the quantum.
 2 -> SRTF (Shortest Remaining Time First)
 3 -> PRIOp (Priority Preemption)
+4 -> PRIOPEnv (Priority Preemption with aging)
 
 Enter the desired option (number):
 )";
@@ -41,6 +42,10 @@ const std::string Menu::taskText = R"(
 Create a new task?
 
 Minimum number of tasks for the simulator to work: 1
+)";
+
+const std::string Menu::alphaText = R"(
+What is the value of the alpha?
 )";
 
 const std::string Menu::colorText = R"(
@@ -65,8 +70,9 @@ const std::string Menu::editText = R"(
 What setting do you want change?
 
 1 -> Scheduler algorithm
-2 -> Quantum duration
-3 -> Tasks information
+2 -> Quantum value
+3 -> Alpha value
+4 -> Tasks information
 
 Enter the desired option (number):
 )";
@@ -126,6 +132,10 @@ void Menu::createArquiveScreen()
     else if(option == 2){
         createAlgorithmScreen();
         createQuantumScreen();
+        
+        if(simulator->getAlgorithmScheduler() == "PRIOPEnv")
+            createAlphaScreen();
+
         createTaskScreen();
         createConfirmationScreen(simulator->getTasks());
     }
@@ -138,7 +148,8 @@ void Menu::createConfirmationScreen(const std::vector<TCB*>& tasks)
     std::cout << "Confirm the settings:\n" << std::endl;
 
     std::cout << "Scheduler algorithm: " << simulator->getAlgorithmScheduler() << std::endl;
-    std::cout << "Quantum duration: " << simulator->getQuantum() << "\n" << std::endl;
+    std::cout << "Quantum duration: " << simulator->getQuantum() << std::endl;
+    std::cout << "Alpha value: " << simulator->getAlpha() << "\n" << std::endl;
 
     std::cout << "Tasks:\n" << std::endl;
 
@@ -190,7 +201,7 @@ void Menu::createAlgorithmScreen()
 
     std::cout << algorithmText << std::endl;
 
-    simulator->setAlgorithmScheduler(checkEntryNumber((unsigned int)1, (unsigned int)3));
+    simulator->setAlgorithmScheduler(checkEntryNumber((unsigned int)1, (unsigned int)4));
 
     clearTerminal();
 }
@@ -262,7 +273,7 @@ void Menu::createTaskScreen()
             task.setColor(1);
             task.setEntryTime(1);
             task.setDuration(1);
-            task.setPriority(1);
+            task.setStaticPriority(1);
 
             numTasks++;
             simulator->addTask(task);
@@ -301,7 +312,7 @@ void Menu::createTaskScreen()
             std::cout << "\nEnter the task priority:" << std::endl;
             num = checkEntryNumber((unsigned int)0, std::numeric_limits<unsigned int>::max());
 
-            task.setPriority(num);
+            task.setStaticPriority(num);
 
             numTasks++;
             simulator->addTask(task);
@@ -330,7 +341,7 @@ void Menu::createEditScreen()
 
     std::cout << editText << std::endl;
 
-    unsigned int option = checkEntryNumber((unsigned int)1, (unsigned int)3);
+    unsigned int option = checkEntryNumber((unsigned int)1, (unsigned int)4);
 
     clearTerminal();
 
@@ -338,7 +349,7 @@ void Menu::createEditScreen()
         std::cout << "Previous algorithm scheduler: " << simulator->getAlgorithmScheduler() << std::endl;
         std::cout << algorithmText << std::endl;
 
-        simulator->setAlgorithmScheduler(checkEntryNumber((unsigned int)1, (unsigned int)3));
+        simulator->setAlgorithmScheduler(checkEntryNumber((unsigned int)1, (unsigned int)4));
     }
     else if(option == 2){
         std::cout << "Previous value of the quantum: " << simulator->getQuantum() << std::endl;
@@ -348,6 +359,14 @@ void Menu::createEditScreen()
             << std::endl;
 
         simulator->setQuantum(checkEntryNumber((unsigned int)0, std::numeric_limits<unsigned int>::max()));
+    }
+    else if(option == 3){
+        std::cout << "Previous value of the alpha: " << simulator->getAlpha() << std::endl;
+        std::cout 
+            << "\nWhat is the value of the new alpha?"
+            << std::endl;
+
+        simulator->setAlpha(checkEntryNumber((unsigned int)1, std::numeric_limits<unsigned int>::max()));
     }
     else{
         std::cout << "Current tasks information:" << std::endl;
@@ -379,7 +398,7 @@ void Menu::createEditScreen()
                 "Color: " << tasks[i]->getColor() << "\n" <<
                 "Entry time: " << tasks[i]->getEntryTime() << "\n" <<
                 "Duration: " << tasks[i]->getDuration() << "\n" <<
-                "Priority: " << tasks[i]->getPriority() << "\n" <<
+                "Priority: " << tasks[i]->getStaticPriority() << "\n" <<
             std::endl;
         }
         else{
@@ -388,7 +407,7 @@ void Menu::createEditScreen()
                 "Color: " << tasks[i]->getStrColor() << "\n" <<
                 "Entry time: " << tasks[i]->getEntryTime() << "\n" <<
                 "Duration: " << tasks[i]->getDuration() << "\n" <<
-                "Priority: " << tasks[i]->getPriority() << "\n" <<
+                "Priority: " << tasks[i]->getStaticPriority() << "\n" <<
             std::endl;
         }
 
@@ -462,7 +481,7 @@ void Menu::createEditScreen()
             
             unsigned int newPriority = checkEntryNumber((unsigned int)0, std::numeric_limits<unsigned int>::max());
 
-            simulator->updateTaskPriority(tasks[i]->getId(), newPriority);
+            simulator->updateTaskStaticPriority(tasks[i]->getId(), newPriority);
         }
     }
 
@@ -473,6 +492,17 @@ void Menu::createEditScreen()
 
     if(optionStr == "Y" || optionStr == "y")
         createEditScreen();
+
+    clearTerminal();
+}
+
+void Menu::createAlphaScreen()
+{
+    clearTerminal();
+
+    std::cout << alphaText << std::endl;
+
+    simulator->setAlpha(checkEntryNumber((unsigned int)1, std::numeric_limits<unsigned int>::max()));
 
     clearTerminal();
 }
@@ -580,7 +610,7 @@ void Menu::showTasks()
                 "Color: " << tasks[i]->getColor() << "\n" <<
                 "Entry time: " << tasks[i]->getEntryTime() << "\n" <<
                 "Duration: " << tasks[i]->getDuration() << "\n" <<
-                "Priority: " << tasks[i]->getPriority() << "\n" <<
+                "Priority: " << tasks[i]->getStaticPriority() << "\n" <<
             std::endl;
         }
         else{
@@ -589,7 +619,7 @@ void Menu::showTasks()
                 "Color: " << tasks[i]->getStrColor() << "\n" <<
                 "Entry time: " << tasks[i]->getEntryTime() << "\n" <<
                 "Duration: " << tasks[i]->getDuration() << "\n" <<
-                "Priority: " << tasks[i]->getPriority() << "\n" <<
+                "Priority: " << tasks[i]->getStaticPriority() << "\n" <<
             std::endl;
         }
     }

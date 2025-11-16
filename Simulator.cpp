@@ -11,6 +11,11 @@ imageGenerator(nullptr)
 
 Simulator::~Simulator()
 {
+    size_t tam = tasks.size();
+    for(size_t i = 0; i < tam; i++){
+        delete tasks[i];
+        tasks[i] = nullptr;
+    }
     tasks.clear();
 
     if(menu != nullptr){
@@ -38,12 +43,6 @@ void Simulator::start()
 
 void Simulator::executeDebugger()
 {
-    // Ponteiro para usar no depurador
-    std::vector<TCB*> ptasks(tasks.size());
-    size_t tam = tasks.size();
-    for(size_t i = 0; i < tam; i++)
-        ptasks[i] = tasks[i];
-
     // cria o gerador de imagem
     if(imageGenerator == nullptr)
         imageGenerator = new GanttChartGenerator(); 
@@ -58,8 +57,6 @@ void Simulator::executeDebugger()
         }
     );
 
-    ptasks = tasks; // pois o std::sort muda os enderecos apontados por tasks
-
     TCB* currentTask = nullptr;
     unsigned int timeLastInterrupt = 0; // in ticks
 
@@ -73,22 +70,21 @@ void Simulator::executeDebugger()
     // quantum
     unsigned int currentTaskQuantum = 0;
 
-    // enquanto houver tarefas no simulador (na "memoria")
-    while(tasks.size()){
+    // enquanto houver tarefas nao finalizadas no simulador (na "memoria")
+    while(IsThereAnUnfinishedTask()){
 
         executeDefault(&currentTask, &globalClock, &deltaTime, &currentTaskQuantum, &timeLastInterrupt);
 
         // Mostra informacoes
         if(currentTask != nullptr)
-            chosenMode(ptasks, currentTask->getId(), globalClock, currentTaskQuantum);
+            chosenMode(currentTask->getId(), globalClock, currentTaskQuantum);
         else
-            chosenMode(ptasks, -1, globalClock, currentTaskQuantum);
+            chosenMode(std::numeric_limits<unsigned int>::max(), globalClock, currentTaskQuantum);
 
         // atualiza relogio
         globalClock += deltaTime;
     }
 
-    deleteTasks(ptasks);
     generateImage();
 }
 
@@ -121,8 +117,8 @@ void Simulator::executeNoDebugger()
     // cria o relogio associado ao quantum
     unsigned int currentTaskQuantum = 0;
 
-    // enquanto houver tarefas no simulador (na "memoria")
-    while(tasks.size()){ 
+    // enquanto houver tarefas nao finalizadas no simulador (na "memoria")
+    while(IsThereAnUnfinishedTask()){
         
         executeDefault(&currentTask, &globalClock, &deltaTime, &currentTaskQuantum, &timeLastInterrupt);
 
@@ -141,19 +137,19 @@ void Simulator::executeDefault(TCB **currentTask, unsigned int *globalClock, con
 
     // verifica se o tempo atual corresponde a alguma tarefa que pode entrar no escalonador
     std::vector<unsigned int> indexTasks;
-    if(canAnyTasksEnter(*globalClock, indexTasks, scheduler->getIdTasks())){
+    if(canAnyTasksEnter(*globalClock, indexTasks)){
 
         // adiciona a(s) tarefa(s) na fila de prontas do escalonador
         size_t tam = indexTasks.size();
         for(size_t i = 0; i < tam; i++){
-            scheduler->addTask(*(tasks[indexTasks[i]]));
+            scheduler->addTask(tasks[indexTasks[i]]);
         }
 
         interrupt_flag = true;
     }
 
     // reliza as ações devidas a tarefa atual
-    if(*currentTask != nullptr && currentTask != nullptr){
+    if(*currentTask != nullptr){
         // atualiza o quatum da tarefa
         *currentTaskQuantum += *deltaTime;
 
@@ -172,7 +168,7 @@ void Simulator::executeDefault(TCB **currentTask, unsigned int *globalClock, con
 
         // desenha na imagem o que aconteceu no processador ate agora
         // em base na tarefa atual
-        if(*currentTask != nullptr && currentTask != nullptr){
+        if(*currentTask != nullptr){
             if((*currentTask)->getColor() != 0) // verifica o formato da cor (antigo ou hexadecimal)
                 imageGenerator->addRectTask((*currentTask)->getId(), (*currentTask)->getColor(), *globalClock, *timeLastInterrupt);
             else
@@ -185,22 +181,22 @@ void Simulator::executeDefault(TCB **currentTask, unsigned int *globalClock, con
         // 2. realizo acoes especiais para tratar a interrupcao
 
         // se o tempo restante da tarefa "executada" acabou
-        if(*currentTask != nullptr && currentTask != nullptr && (*currentTask)->getRemainingTime() <= 0){
+        if(*currentTask != nullptr && (*currentTask)->getRemainingTime() <= 0){
             
             // calcula o tempo de fim da tarefa
             (*currentTask)->setEndTime(*globalClock);
 
-            updateTask(*currentTask);
-
-            // remove a tarefa na fila de prontas do simulator
-            unsigned int idErase = (*currentTask)->getId();
-            removeTask(idErase);
+            // marca como finalizado a tarefa
+            (*currentTask)->setState(TCB::State::Finished);
 
             // remove a tarefa na fila de prontas do escalonador
-            scheduler->removeTask(idErase);
+            scheduler->removeTask((*currentTask)->getId());
 
             // "executa" outra tarefa no processador
             (*currentTask) = scheduler->getNextTask();
+
+            // atualiza o quantum da tarefa
+            *currentTaskQuantum = 0;
         }
         // se o tempo de quantum da tarefa acabou
         else if(getQuantum() > 0 && *currentTaskQuantum >= getQuantum()){
@@ -210,27 +206,32 @@ void Simulator::executeDefault(TCB **currentTask, unsigned int *globalClock, con
             scheduler->taskQuantumEnded();
 
             // "executa" outra tarefa no processador
+            (*currentTask)->setState(TCB::State::Ready);
             (*currentTask) = scheduler->getNextTask();
         }
-
         // se alguma tarefa entrou no escalonador, e existe uma tarefa "executada"
-        if(*currentTask != nullptr && currentTask != nullptr && indexTasks.size()){
+        else if(*currentTask != nullptr && indexTasks.size()){
             unsigned int previousTaskId = (*currentTask)->getId();
 
             // "executa" outra tarefa no processador
+            (*currentTask)->setState(TCB::State::Ready);
             (*currentTask) = scheduler->getNextTask();
 
             // verifica se houve uma troca de tarefas
             if(previousTaskId != (*currentTask)->getId())
                 *currentTaskQuantum = 0;
-        }   
-        else{
+        }
+        // se alguma tarefa entrou no escalonador, e nao existe uma tarefa "executada"
+        else if(indexTasks.size()){
             // "executa" outra tarefa no processador
             (*currentTask) = scheduler->getNextTask();
 
             *currentTaskQuantum = 0;
         }     
     }
+
+    if(*currentTask != nullptr)
+        (*currentTask)->setState(TCB::State::Running);
 }
 
 // função auxiliar para trim (remove espaços no início e no fim)
@@ -248,7 +249,7 @@ void Simulator::remove_cr(std::string &s) {
     s.erase(std::remove(s.begin(), s.end(), '\r'), s.end());
 }
 
-const bool Simulator::existId(int id)
+const bool Simulator::existId(unsigned int id)
 {
     size_t tam = tasks.size();
     for(size_t i = 0; i < tam; i++)
@@ -258,18 +259,18 @@ const bool Simulator::existId(int id)
     return false;
 }
 
-int Simulator::modifyId(int id)
+unsigned int Simulator::modifyId(unsigned int id)
 {
     static std::mt19937 gen(std::random_device{}());
 
-    int newId = id;
-    int factor = 2;
+    unsigned int newId = id;
+    unsigned int factor = 2;
     const int maxFactor = 1000000; // seguranca
-    int numAttempts = 0;
+    unsigned int numAttempts = 0;
     
     // metodo escolhido: dou preferencia aos numeros menores
     while(existId(newId)){
-        std::uniform_int_distribution<int> dist(0, factor - 1);
+        std::uniform_int_distribution<unsigned int> dist(0, factor - 1);
         newId = dist(gen);
 
         numAttempts++;
@@ -283,7 +284,7 @@ int Simulator::modifyId(int id)
 
 // Usado no depurador
 // Cria uma tarefa, com as informacoes do idTask passado, no heap
-void Simulator::createTask(std::vector<TCB*>& pTasks, int idTask)
+void Simulator::createTask(std::vector<TCB*>& pTasks, unsigned int idTask)
 {
     // Encontra a tarefa a ser copiada
     std::vector<TCB*>::iterator it;
@@ -303,20 +304,7 @@ void Simulator::createTask(std::vector<TCB*>& pTasks, int idTask)
     (*it2) = newTask; 
 }
 
-void Simulator::deleteTasks(std::vector<TCB*>& pTasks)
-{
-    size_t tam = pTasks.size();
-    for(size_t i = 0; i < tam; i++){
-        if(pTasks[i] != nullptr){
-            delete pTasks[i];
-            pTasks[i] = nullptr;
-        }
-    }
-
-    pTasks.clear();
-}
-
-void Simulator::chosenMode(const std::vector<TCB*>& pTasks, const int& currentIdTask, const unsigned int& globalClock, const unsigned int& currentTaskQuantum)
+void Simulator::chosenMode(const unsigned int& currentIdTask, const unsigned int& globalClock, const unsigned int& currentTaskQuantum)
 {
     menu->clearTerminal();
 
@@ -332,16 +320,16 @@ void Simulator::chosenMode(const std::vector<TCB*>& pTasks, const int& currentId
     int option = menu->checkEntryNumber(1, 3);
 
     if(option == 1){
-        showAllTasks(pTasks, currentIdTask, globalClock, currentTaskQuantum);
+        showAllTasks(currentIdTask, globalClock, currentTaskQuantum);
     }
     else if(option == 2){
-        showReadyTasks(pTasks, currentIdTask, globalClock, currentTaskQuantum);
+        showReadyTasks(currentIdTask, globalClock, currentTaskQuantum);
     }
 
     menu->clearTerminal();
 }
 
-void Simulator::showMinimumInfo(const int& currentIdTask, const unsigned int& globalClock, const unsigned int& currentTaskQuantum)
+void Simulator::showMinimumInfo(const unsigned int& currentIdTask, const unsigned int& globalClock, const unsigned int& currentTaskQuantum)
 {
     std::cout 
         << "Algorithm scheduler: " << getAlgorithmScheduler() << "\n"
@@ -352,7 +340,7 @@ void Simulator::showMinimumInfo(const int& currentIdTask, const unsigned int& gl
         << std::endl;
 }
 
-void Simulator::showAllTasks(const std::vector<TCB*>& pTasks, const int& currentIdTask, const unsigned int& globalClock, const unsigned int& currentTaskQuantum)
+void Simulator::showAllTasks(const unsigned int& currentIdTask, const unsigned int& globalClock, const unsigned int& currentTaskQuantum)
 {
     menu->clearTerminal();
 
@@ -360,31 +348,33 @@ void Simulator::showAllTasks(const std::vector<TCB*>& pTasks, const int& current
 
     // Mostra as informacoes das tarefas para o usuario
     std::cout << "Tasks information:\n" << std::endl;
-    size_t tam = pTasks.size();
+    size_t tam = tasks.size();
     for(size_t i = 0; i < tam; i++){
         // Verifica o tipo da cor
-        if(pTasks[i]->getColor() != 0){
+        if(tasks[i]->getColor() != 0){
             std::cout << 
-                "ID: " << pTasks[i]->getId() << "\n" <<
-                "Color: " << pTasks[i]->getColor() << "\n" <<
-                "Entry time: " << pTasks[i]->getEntryTime() << "\n" <<
-                "Duration: " << pTasks[i]->getDuration() << "\n" <<
-                "Priority: " << pTasks[i]->getPriority() << 
+                "ID: " << tasks[i]->getId() << "\n" <<
+                "Color: " << tasks[i]->getColor() << "\n" <<
+                "Entry time: " << tasks[i]->getEntryTime() << "\n" <<
+                "Duration: " << tasks[i]->getDuration() << "\n" <<
+                "Static priority: " << tasks[i]->getStaticPriority() << "\n" <<
+                "Dynamic priority: " << tasks[i]->getDynamicPriority() <<
             std::endl;
         }
         else{
             std::cout << 
-                "ID: " << pTasks[i]->getId() << "\n" <<
-                "Color: " << pTasks[i]->getStrColor() << "\n" <<
-                "Entry time: " << pTasks[i]->getEntryTime() << "\n" <<
-                "Duration: " << pTasks[i]->getDuration() << "\n" <<
-                "Priority: " << pTasks[i]->getPriority() << 
+                "ID: " << tasks[i]->getId() << "\n" <<
+                "Color: " << tasks[i]->getStrColor() << "\n" <<
+                "Entry time: " << tasks[i]->getEntryTime() << "\n" <<
+                "Duration: " << tasks[i]->getDuration() << "\n" <<
+                "Priority: " << tasks[i]->getStaticPriority() << "\n" <<
+                "Dynamic priority: " << tasks[i]->getDynamicPriority() <<
             std::endl;
         }
 
         // Verifica se a tarefa acabou
-        if(pTasks[i]->getEndTime() != std::numeric_limits<unsigned int>::max())
-            std::cout << "End time: " << pTasks[i]->getEndTime() << "\n";
+        if(tasks[i]->getEndTime() != std::numeric_limits<unsigned int>::max())
+            std::cout << "End time: " << tasks[i]->getEndTime() << "\n";
 
         std::cout << std::endl;
     }
@@ -393,12 +383,12 @@ void Simulator::showAllTasks(const std::vector<TCB*>& pTasks, const int& current
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // limpa o buffer do cout
     std::cin.get();
 
-    chosenMode(pTasks, currentIdTask, globalClock, currentTaskQuantum);
+    chosenMode(currentIdTask, globalClock, currentTaskQuantum);
 
     menu->clearTerminal();
 }
 
-void Simulator::showReadyTasks(const std::vector<TCB*>& pTasks, const int &currentIdTask, const unsigned int &globalClock, const unsigned int& currentTaskQuantum)
+void Simulator::showReadyTasks(const unsigned int &currentIdTask, const unsigned int &globalClock, const unsigned int& currentTaskQuantum)
 {
     menu->clearTerminal();
 
@@ -407,26 +397,28 @@ void Simulator::showReadyTasks(const std::vector<TCB*>& pTasks, const int &curre
     // Mostra as informacoes das tarefas para o usuario
     std::cout << "Information about tasks in the ready queue, and the executed task:\n" << std::endl;
 
-    std::vector<TCB>& t = scheduler->getTasks();
+    std::vector<TCB*>& t = scheduler->getTasks();
     size_t tam = scheduler->getTasks().size();
     for(size_t i = 0; i < tam; i++){
         // Verifica o tipo da cor
-        if(t[i].getColor() != 0){
+        if(t[i]->getColor() != 0){
             std::cout << 
-                "ID: " << t[i].getId() << "\n" <<
-                "Color: " << t[i].getColor() << "\n" <<
-                "Entry time: " << t[i].getEntryTime() << "\n" <<
-                "Duration: " << t[i].getDuration() << "\n" <<
-                "Priority: " << t[i].getPriority() << "\n" <<
+                "ID: " << t[i]->getId() << "\n" <<
+                "Color: " << t[i]->getColor() << "\n" <<
+                "Entry time: " << t[i]->getEntryTime() << "\n" <<
+                "Duration: " << t[i]->getDuration() << "\n" <<
+                "Static priority: " << t[i]->getStaticPriority() << "\n" <<
+                "Dynamic priority: " << t[i]->getDynamicPriority() <<
             std::endl;
         }
         else{
             std::cout << 
-                "ID: " << t[i].getId() << "\n" <<
-                "Color: " << t[i].getStrColor() << "\n" <<
-                "Entry time: " << t[i].getEntryTime() << "\n" <<
-                "Duration: " << t[i].getDuration() << "\n" <<
-                "Priority: " << t[i].getPriority() << "\n" <<
+                "ID: " << t[i]->getId() << "\n" <<
+                "Color: " << t[i]->getStrColor() << "\n" <<
+                "Entry time: " << t[i]->getEntryTime() << "\n" <<
+                "Duration: " << t[i]->getDuration() << "\n" <<
+                "Priority: " << t[i]->getStaticPriority() << "\n" <<
+                "Dynamic priority: " << t[i]->getDynamicPriority() <<
             std::endl;
         }
     }
@@ -435,7 +427,7 @@ void Simulator::showReadyTasks(const std::vector<TCB*>& pTasks, const int &curre
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // limpa o buffer do cout
     std::cin.get();
 
-    chosenMode(pTasks, currentIdTask, globalClock, currentTaskQuantum);
+    chosenMode(currentIdTask, globalClock, currentTaskQuantum);
 
     menu->clearTerminal();
 }
@@ -450,7 +442,7 @@ std::vector<TCB*> Simulator::loadArquive() {
 
     std::string line;
 
-    // 1) Ler primeira linha inteira: algoritmo;quantum
+    // 1) Ler primeira linha inteira: algoritmo;quantum;alpha
     if (!std::getline(file, line)) {
         std::cerr << "Configuration file is empty" << std::endl;
         return std::vector<TCB*>();
@@ -465,9 +457,12 @@ std::vector<TCB*> Simulator::loadArquive() {
 
     // parse da primeira linha
     std::istringstream ss(line);
+
     std::string alg;
     std::string quantumStr;
+    std::string alphaStr;
 
+    // --- algoritmo ---
     if (!std::getline(ss, alg, ';')) {
         std::cerr << "Malformed first line: missing algorithm" << std::endl;
         return std::vector<TCB*>();
@@ -476,38 +471,37 @@ std::vector<TCB*> Simulator::loadArquive() {
     trim(alg);
     setAlgorithmScheduler(alg);
 
+    // --- quantum ---
     if (!std::getline(ss, quantumStr, ';')) {
-        // tentar sem delimitador adicional (se não houver ';' depois)
-        // neste caso quantumStr já foi lido como resto da linha por getline com '\n'
-        // mas getline com ';' retorna false se não há ';'
-        ss.clear();
-        ss.seekg(0);
-        // alternativa: ler o resto da stream
-        ss.str(line); // reatribui
-        // consumir até o ';' novamente
-        size_t pos = line.find(';');
-        if (pos != std::string::npos && pos + 1 < line.size()) {
-            quantumStr = line.substr(pos + 1);
-        } else {
-            std::cerr << "Malformed first line: missing quantum" << std::endl;
-            return std::vector<TCB*>();
-        }
+        std::cerr << "Malformed first line: missing quantum" << std::endl;
+        return std::vector<TCB*>();
     }
     remove_cr(quantumStr);
     trim(quantumStr);
-    if (quantumStr.empty()) {
-        std::cerr << "Quantum empty in configuration" << std::endl;
+
+    // valida quantum
+    try {
+        int q = std::stoi(quantumStr);
+        extraInfo.setQuantum(q);
+    } catch (...) {
+        std::cerr << "Invalid quantum value: '" << quantumStr << "'" << std::endl;
         return std::vector<TCB*>();
     }
+
+    // --- alpha ---
+    if (!std::getline(ss, alphaStr, ';')) {
+        std::cerr << "Malformed first line: missing alpha" << std::endl;
+        return {};
+    }
+    remove_cr(alphaStr);
+    trim(alphaStr);
+
+    // valida alpha
     try {
-        int num = std::stoi(quantumStr);
-        if(num == 0){
-            std::cerr << "Invalid quantum value: '" << quantumStr << "'" << std::endl;
-            return std::vector<TCB*>();
-        }
-        extraInfo.setQuantum(num);
-    } catch (const std::exception &e) {
-        std::cerr << "Invalid quantum value: '" << quantumStr << "'" << std::endl;
+        int a = std::stoi(alphaStr);
+        extraInfo.setAlpha(a);
+    } catch (...) {
+        std::cerr << "Invalid alpha value: '" << alphaStr << "'" << std::endl;
         return std::vector<TCB*>();
     }
 
@@ -531,7 +525,7 @@ std::vector<TCB*> Simulator::loadArquive() {
             try {
                 out = std::stoi(field);
                 return true;
-            } catch (const std::exception &e) {
+            } catch (...) {
                 return false;
             }
         };
@@ -558,7 +552,7 @@ std::vector<TCB*> Simulator::loadArquive() {
             try{
                 tmp = std::stoi(strTmp);
             }
-            catch (const std::exception &e){
+            catch (...){
                 std::cerr << "Bad or missing ID in line: " << line << std::endl; 
                 continue;
             }
@@ -614,7 +608,7 @@ std::vector<TCB*> Simulator::loadArquive() {
             std::cerr << "Bad or missing Priority in line: " << line << std::endl; 
             continue; 
         }
-        task->setPriority(tmp);
+        task->setStaticPriority(tmp);
 
         tasks.push_back(task);
     }
@@ -634,15 +628,6 @@ void Simulator::addTask(TCB task)
     t->copyTCB(task);
 
     tasks.push_back(t);
-}
-
-void Simulator::removeTask(unsigned int idTask)
-{
-    std::vector<TCB*>::iterator it;
-    for(it = tasks.begin(); (*it)->getId() != idTask; it++);
-
-    // Remove a tarefa original do simulador
-    tasks.erase(it);
 }
 
 // task tem que existir em tasks
@@ -727,13 +712,13 @@ void Simulator::updateTaskDuration(const unsigned int &idTask, const unsigned in
 Requisitos:
 o idTask tem que existir em tasks
 */
-void Simulator::updateTaskPriority(const unsigned int &idTask, const unsigned int &newPriority)
+void Simulator::updateTaskStaticPriority(const unsigned int &idTask, const unsigned int &newPriority)
 {
     size_t tam = tasks.size();
     size_t i;
     for(i = 0; tasks[i]->getId() != idTask; i++);
 
-    tasks[i]->setDuration(newPriority);
+    tasks[i]->setStaticPriority(newPriority);
 }
 
 void Simulator::setAlgorithmScheduler(int i)
@@ -756,6 +741,11 @@ void Simulator::setAlgorithmScheduler(int i)
 
         scheduler->setAlgorithm(Scheduler::Algorithm::PRIOp);
     }
+    else if(i == 4){
+        extraInfo.setAlgorithmScheduler("PRIOPEnv");
+
+        scheduler->setAlgorithm(Scheduler::Algorithm::PRIOPEnv);
+    }
 }
 
 void Simulator::setAlgorithmScheduler(std::string algorithm)
@@ -765,17 +755,24 @@ void Simulator::setAlgorithmScheduler(std::string algorithm)
     if(scheduler == nullptr)
         scheduler = new Scheduler();
 
-    if(algorithm == "FIFO" || algorithm == "FCFS")
+    if(algorithm == "FIFO" || algorithm == "FCFS" || algorithm == "RR")
         scheduler->setAlgorithm(Scheduler::Algorithm::FIFO);
     else if(algorithm == "SRTF")
         scheduler->setAlgorithm(Scheduler::Algorithm::SRTF);
     else if(algorithm == "PRIOp")
         scheduler->setAlgorithm(Scheduler::Algorithm::PRIOp);
+    else if(algorithm == "PRIOPEnv")
+        scheduler->setAlgorithm(Scheduler::Algorithm::PRIOPEnv);
 }
 
 void Simulator::setQuantum(unsigned int q)
 {
     extraInfo.setQuantum(q);
+}
+
+void Simulator::setAlpha(unsigned int a)
+{
+    extraInfo.setAlpha(a);
 }
 
 std::vector<TCB*> Simulator::getTasks() const
@@ -791,6 +788,11 @@ std::string Simulator::getAlgorithmScheduler() const
 unsigned int Simulator::getQuantum() const
 {
     return extraInfo.getQuantum();
+}
+
+unsigned int Simulator::getAlpha() const
+{
+    return extraInfo.getAlpha();
 }
 
 double Simulator::calcTicksPerSecond()
@@ -842,21 +844,30 @@ unsigned int Simulator::getMaxEntryTime()
 }
 
 // timeNow em ticks
-const bool Simulator::canAnyTasksEnter(double timeNow, std::vector<unsigned int>& indexTasks, const std::vector<int>& exceptionIdTasks)
+const bool Simulator::canAnyTasksEnter(double timeNow, std::vector<unsigned int>& indexTasks)
 {
     bool found = false;
 
-    size_t tam = tasks.size();
-    for(size_t i = 0; i < tam; i++){
-        // verifica se o id de tasks esta dentro de exceptionIdTasks
-        std::vector<int>::const_iterator it;
-        it = std::find(exceptionIdTasks.begin(), exceptionIdTasks.end(), tasks[i]->getId());
-
-        if(it == exceptionIdTasks.end() && timeNow >= tasks[i]->getEntryTime()){
-            indexTasks.push_back(static_cast<unsigned int>(i));
+    for (unsigned int i = 0; i < tasks.size(); i++)
+    {
+        // só entra se nunca tiver sido adicionada ao escalonador
+        if (tasks[i]->getState() == TCB::State::New &&
+            timeNow >= tasks[i]->getEntryTime())
+        {
+            indexTasks.push_back(i);
             found = true;
         }
     }
-    
+
     return found;
+}
+
+const bool Simulator::IsThereAnUnfinishedTask()
+{
+    size_t tam = tasks.size();
+    for(size_t i = 0; i < tam; i++)
+        if(tasks[i]->getState() != TCB::State::Finished)
+            return true;
+
+    return false;
 }

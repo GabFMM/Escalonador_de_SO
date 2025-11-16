@@ -6,9 +6,12 @@ color(0),
 strColor(6, ' '),
 entryTime(0),
 duration(0),
-priority(0),
+staticPriority(0),
+dynamicPriority(0),
 remainingTime(0),
-endTime(std::numeric_limits<unsigned int>::max()){
+endTime(std::numeric_limits<unsigned int>::max()),
+state(State::New)
+{
     
 }
 
@@ -18,9 +21,11 @@ TCB::~TCB(){
     strColor.clear();
     entryTime = 0;
     duration = 0;
-    priority = 0;
+    staticPriority = 0;
+    dynamicPriority = 0;
     remainingTime = 0;
     endTime = 0;
+    state = State::Finished;
 }
 
 // Setters
@@ -51,8 +56,13 @@ void TCB::setDuration(unsigned int duration) {
     setRemainingTime(duration);
 }
 
-void TCB::setPriority(unsigned int priority) {
-    this->priority = priority;
+void TCB::setStaticPriority(unsigned int priority) {
+    this->staticPriority = priority;
+}
+
+void TCB::setDynamicPriority(unsigned int priority)
+{
+    this->dynamicPriority = priority;
 }
 
 void TCB::setRemainingTime(long long remainingTime) {
@@ -63,8 +73,13 @@ void TCB::setEndTime(unsigned int endTime) {
     this->endTime = endTime;
 }
 
+void TCB::setState(State state)
+{
+    this->state = state;
+}
+
 // Getters
-int TCB::getId() const {
+unsigned int TCB::getId() const {
     return id;
 }
 
@@ -90,8 +105,13 @@ unsigned int TCB::getDuration() const {
     return duration;
 }
 
-unsigned int TCB::getPriority() const {
-    return priority;
+unsigned int TCB::getStaticPriority() const {
+    return staticPriority;
+}
+
+unsigned int TCB::getDynamicPriority() const
+{
+    return dynamicPriority;
 }
 
 unsigned int TCB::getRemainingTime() const {
@@ -100,6 +120,11 @@ unsigned int TCB::getRemainingTime() const {
 
 unsigned int TCB::getEndTime() const {
     return endTime;
+}
+
+TCB::State TCB::getState() const
+{
+    return state;
 }
 
 // util quando this eh ponteiro
@@ -113,10 +138,12 @@ void TCB::copyTCB(const TCB &t)
         strColor = t.strColor;
         entryTime = t.entryTime;
         duration = t.duration;
-        priority = t.priority;
+        staticPriority = t.staticPriority;
+        dynamicPriority = t.dynamicPriority;
         remainingTime = t.remainingTime;
         endTime = t.endTime;
         lastUsedTime = t.lastUsedTime;
+        state = t.state;
     }
     return;
 }
@@ -131,10 +158,12 @@ TCB& TCB::operator=(const TCB &t)
         strColor = t.strColor;
         entryTime = t.entryTime;
         duration = t.duration;
-        priority = t.priority;
+        staticPriority = t.staticPriority;
+        dynamicPriority = t.dynamicPriority;
         remainingTime = t.remainingTime;
         endTime = t.endTime;
         lastUsedTime = t.lastUsedTime;
+        state = t.state;
     }
     return *this; // retorna o objeto atual (por referência)
 }

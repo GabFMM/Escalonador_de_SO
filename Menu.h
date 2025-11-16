@@ -16,6 +16,7 @@ private:
     static const std::string arquiveText;
     static const std::string algorithmText;
     static const std::string taskText;
+    static const std::string alphaText;
     static const std::string chosenModeText;
     static const std::string quantumText;
     static const std::string editText;
@@ -40,6 +41,7 @@ public:
     void createTaskScreen();
     void createQuantumScreen();
     void createEditScreen();
+    void createAlphaScreen();
 
     // metodos auxiliares
     unsigned int checkEntryNumber(unsigned int firstNumber, unsigned int lastOption);
