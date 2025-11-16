@@ -56,7 +56,6 @@ void Scheduler::addTask(TCB task)
         std::sort(readyTasks.begin(), readyTasks.end(), [](const TCB& a, const TCB& b){return a.getPriority() > b.getPriority();});
         break;
     }
-    
 }
 
 void Scheduler::removeTask(unsigned int idTask)
@@ -70,6 +69,34 @@ void Scheduler::removeTask(unsigned int idTask)
 const bool Scheduler::existTask() const
 {
     return readyTasks.size();
+}
+
+// Ocorre quando a tarefa "executada" tem o seu quantum zerado
+// Esse metodo deve ser chamado no executeDefault
+void Scheduler::taskQuantumEnded()
+{
+    // Coloca a tarefa "executada" no final do vetor
+    TCB aux = readyTasks[0];
+    readyTasks.erase(std::vector<TCB>::const_iterator(readyTasks.begin()));
+    readyTasks.push_back(aux);
+
+    // Reordena o vetor conforme o algoritmo
+    switch (algorithmChosen)
+    {
+    case Algorithm::FIFO:
+        // Sem necessidade de ordenacao, pois no simulator ja vem ordenado por ordem de chegada
+        break;
+    
+    case Algorithm::SRTF:
+        // Ordena por menor tempo restante
+        std::sort(readyTasks.begin(), readyTasks.end(), [](const TCB& a, const TCB& b){return a.getRemainingTime() < b.getRemainingTime();});
+        break;
+    
+    case Algorithm::PRIOp:
+        // Ordena por maior prioridade
+        std::sort(readyTasks.begin(), readyTasks.end(), [](const TCB& a, const TCB& b){return a.getPriority() > b.getPriority();});
+        break;
+    }
 }
 
 TCB* Scheduler::getNextTask()

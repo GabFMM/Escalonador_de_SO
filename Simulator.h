@@ -72,8 +72,8 @@ public:
     // Debugger
     void createTask(std::vector<TCB*>& pTasks, int idTask);
     void deleteTasks(std::vector<TCB*>& pTasks);
-    void chosenMode(const std::vector<TCB*>& pTasks, const int& currentIdTask, const unsigned int& globalClock);
-    void showMinimumInfo(const int& currentIdTask, const unsigned int& globalClock);
-    void showAllTasks(const std::vector<TCB*>& pTasks, const int& currentIdTask, const unsigned int& globalClock);
-    void showReadyTasks(const std::vector<TCB*>& pTasks, const int& currentIdTask, const unsigned int& globalClock);
+    void chosenMode(const std::vector<TCB*>& pTasks, const int& currentIdTask, const unsigned int& globalClock, const unsigned int& currentTaskQuantum);
+    void showMinimumInfo(const int& currentIdTask, const unsigned int& globalClock, const unsigned int& currentTaskQuantum);
+    void showAllTasks(const std::vector<TCB*>& pTasks, const int& currentIdTask, const unsigned int& globalClock, const unsigned int& currentTaskQuantum);
+    void showReadyTasks(const std::vector<TCB*>& pTasks, const int& currentIdTask, const unsigned int& globalClock, const unsigned int& currentTaskQuantum);
 };

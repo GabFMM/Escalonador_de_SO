@@ -80,9 +80,9 @@ void Simulator::executeDebugger()
 
         // Mostra informacoes
         if(currentTask != nullptr)
-            chosenMode(ptasks, currentTask->getId(), globalClock);
+            chosenMode(ptasks, currentTask->getId(), globalClock, currentTaskQuantum);
         else
-            chosenMode(ptasks, -1, globalClock);
+            chosenMode(ptasks, -1, globalClock, currentTaskQuantum);
 
         // atualiza relogio
         globalClock += deltaTime;
@@ -136,75 +136,57 @@ void Simulator::executeNoDebugger()
 // método auxiliar que ocorre igualmente em executeDebugger e executeNoDebugger
 void Simulator::executeDefault(TCB **currentTask, unsigned int *globalClock, const unsigned int *deltaTime, unsigned int *currentTaskQuantum, unsigned int *timeLastInterrupt)
 {
+    // determina se o getNextTask do escalonador deve ser chamado
+    bool interrupt_flag = false;
+
     // verifica se o tempo atual corresponde a alguma tarefa que pode entrar no escalonador
     std::vector<unsigned int> indexTasks;
     if(canAnyTasksEnter(*globalClock, indexTasks, scheduler->getIdTasks())){
 
-        // ignora a primeira interrupcao
-        if(*currentTask != nullptr && currentTask != nullptr){
-            // desenha na imagem o que aconteceu no processador ate agora (interrupcao)
-            // em base na tarefa atual
-            if((*currentTask)->getColor() != 0) // verifica o formato da cor (antigo ou hexadecimal)
-                imageGenerator->addRectTask((*currentTask)->getId(), (*currentTask)->getColor(), *globalClock, *timeLastInterrupt);
-            else
-                imageGenerator->addRectTask((*currentTask)->getId(), (*currentTask)->getStrColor(), *globalClock, *timeLastInterrupt);
-
-            // Atualiza o tempo restante da tarefa executada
-            (*currentTask)->setRemainingTime((*currentTask)->getRemainingTime() - *deltaTime);
-
-            if((*currentTask)->getRemainingTime() <= 0){
-                // calcula o tempo de fim da tarefa
-                (*currentTask)->setEndTime(*globalClock);
-
-                updateTask(*currentTask);
-
-                // remove a tarefa na fila de prontas do simulator
-                unsigned int idErase = (*currentTask)->getId();
-                removeTask(idErase);
-
-                // remove a tarefa na fila de prontas do escalonador
-                scheduler->removeTask(idErase);
-
-                // Recalcula o valor do index para nao acessar memoria invalida
-                canAnyTasksEnter(*globalClock, indexTasks, scheduler->getIdTasks());
-            }
-        }
-
-        *timeLastInterrupt = *globalClock;
-
         // adiciona a(s) tarefa(s) na fila de prontas do escalonador
         size_t tam = indexTasks.size();
         for(size_t i = 0; i < tam; i++){
-            tasks[indexTasks[i]]->setLastUsedTime(*globalClock);
-        
             scheduler->addTask(*(tasks[indexTasks[i]]));
         }
 
-        // "executa" a tarefa no processador
-        (*currentTask) = scheduler->getNextTask();
-
-        // Atualiza o quantum da tarefa
-        *currentTaskQuantum = 0;
+        interrupt_flag = true;
     }
+
     // reliza as ações devidas a tarefa atual
-    else if(*currentTask != nullptr && currentTask != nullptr){
+    if(*currentTask != nullptr && currentTask != nullptr){
         // atualiza o quatum da tarefa
         *currentTaskQuantum += *deltaTime;
 
         // atualiza o tempo restante da tarefa
         (*currentTask)->setRemainingTime((*currentTask)->getRemainingTime() - *deltaTime);
 
-        // verifica se o tempo restante da tarefa acabou
-        if((*currentTask)->getRemainingTime() <= 0){
-            // desenha na imagem o que aconteceu no processador ate agora (interrupcao)
-            // em base na tarefa atual
+        // gerou interrupcao
+        if((*currentTask)->getRemainingTime() <= 0 || (getQuantum() > 0 && *currentTaskQuantum >= getQuantum()))
+            interrupt_flag = true;
+    }
+
+    // Se houve interrupcao
+    if(interrupt_flag){
+        
+        // 1. realizo acoes gerais para tratar a interrupcao
+
+        // desenha na imagem o que aconteceu no processador ate agora
+        // em base na tarefa atual
+        if(*currentTask != nullptr && currentTask != nullptr){
             if((*currentTask)->getColor() != 0) // verifica o formato da cor (antigo ou hexadecimal)
                 imageGenerator->addRectTask((*currentTask)->getId(), (*currentTask)->getColor(), *globalClock, *timeLastInterrupt);
             else
                 imageGenerator->addRectTask((*currentTask)->getId(), (*currentTask)->getStrColor(), *globalClock, *timeLastInterrupt);
+        }
 
-            *timeLastInterrupt = *globalClock;
+        // atualiza o tempo da ultima interrupcao
+        *timeLastInterrupt = *globalClock;
 
+        // 2. realizo acoes especiais para tratar a interrupcao
+
+        // se o tempo restante da tarefa "executada" acabou
+        if(*currentTask != nullptr && currentTask != nullptr && (*currentTask)->getRemainingTime() <= 0){
+            
             // calcula o tempo de fim da tarefa
             (*currentTask)->setEndTime(*globalClock);
 
@@ -219,25 +201,35 @@ void Simulator::executeDefault(TCB **currentTask, unsigned int *globalClock, con
 
             // "executa" outra tarefa no processador
             (*currentTask) = scheduler->getNextTask();
-
+        }
+        // se o tempo de quantum da tarefa acabou
+        else if(getQuantum() > 0 && *currentTaskQuantum >= getQuantum()){
             // atualiza o quantum da tarefa
             *currentTaskQuantum = 0;
-        }
-        // Verifica se o quantum da tarefa acabou
-        else if(*currentTaskQuantum >= getQuantum()){
-            *currentTaskQuantum = 0;
 
-            // desenha na imagem o que aconteceu no processador ate agora (interrupcao)
-            // em base na tarefa atual
-            if((*currentTask)->getColor() != 0) // verifica o formato da cor (antigo ou hexadecimal)
-                imageGenerator->addRectTask((*currentTask)->getId(), (*currentTask)->getColor(), *globalClock, *timeLastInterrupt);
-            else
-                imageGenerator->addRectTask((*currentTask)->getId(), (*currentTask)->getStrColor(), *globalClock, *timeLastInterrupt);
+            scheduler->taskQuantumEnded();
 
-            *timeLastInterrupt = *globalClock;
-
+            // "executa" outra tarefa no processador
             (*currentTask) = scheduler->getNextTask();
         }
+
+        // se alguma tarefa entrou no escalonador, e existe uma tarefa "executada"
+        if(*currentTask != nullptr && currentTask != nullptr && indexTasks.size()){
+            unsigned int previousTaskId = (*currentTask)->getId();
+
+            // "executa" outra tarefa no processador
+            (*currentTask) = scheduler->getNextTask();
+
+            // verifica se houve uma troca de tarefas
+            if(previousTaskId != (*currentTask)->getId())
+                *currentTaskQuantum = 0;
+        }   
+        else{
+            // "executa" outra tarefa no processador
+            (*currentTask) = scheduler->getNextTask();
+
+            *currentTaskQuantum = 0;
+        }     
     }
 }
 
@@ -324,11 +316,11 @@ void Simulator::deleteTasks(std::vector<TCB*>& pTasks)
     pTasks.clear();
 }
 
-void Simulator::chosenMode(const std::vector<TCB*>& pTasks, const int& currentIdTask, const unsigned int& globalClock)
+void Simulator::chosenMode(const std::vector<TCB*>& pTasks, const int& currentIdTask, const unsigned int& globalClock, const unsigned int& currentTaskQuantum)
 {
     menu->clearTerminal();
 
-    showMinimumInfo(currentIdTask, globalClock);
+    showMinimumInfo(currentIdTask, globalClock, currentTaskQuantum);
 
     std::cout << 
         "Enter the number of the desired option:\n\n" <<
@@ -340,28 +332,31 @@ void Simulator::chosenMode(const std::vector<TCB*>& pTasks, const int& currentId
     int option = menu->checkEntryNumber(1, 3);
 
     if(option == 1){
-        showAllTasks(pTasks, currentIdTask, globalClock);
+        showAllTasks(pTasks, currentIdTask, globalClock, currentTaskQuantum);
     }
     else if(option == 2){
-        showReadyTasks(pTasks, currentIdTask, globalClock);
+        showReadyTasks(pTasks, currentIdTask, globalClock, currentTaskQuantum);
     }
 
     menu->clearTerminal();
 }
 
-void Simulator::showMinimumInfo(const int& currentIdTask, const unsigned int& globalClock)
+void Simulator::showMinimumInfo(const int& currentIdTask, const unsigned int& globalClock, const unsigned int& currentTaskQuantum)
 {
     std::cout 
         << "Algorithm scheduler: " << getAlgorithmScheduler() << "\n"
+        << "Quantum value: " << getQuantum() << "\n"
         << "Current time instant: " << globalClock << "\n"
-        << "Executed Task ID: " << currentIdTask << "\n" << std::endl;
+        << "Current Task quantum: " << currentTaskQuantum << "\n"
+        << "Executed Task ID: " << currentIdTask << "\n" 
+        << std::endl;
 }
 
-void Simulator::showAllTasks(const std::vector<TCB*>& pTasks, const int& currentIdTask, const unsigned int& globalClock)
+void Simulator::showAllTasks(const std::vector<TCB*>& pTasks, const int& currentIdTask, const unsigned int& globalClock, const unsigned int& currentTaskQuantum)
 {
     menu->clearTerminal();
 
-    showMinimumInfo(currentIdTask, globalClock);
+    showMinimumInfo(currentIdTask, globalClock, currentTaskQuantum);
 
     // Mostra as informacoes das tarefas para o usuario
     std::cout << "Tasks information:\n" << std::endl;
@@ -398,16 +393,16 @@ void Simulator::showAllTasks(const std::vector<TCB*>& pTasks, const int& current
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // limpa o buffer do cout
     std::cin.get();
 
-    chosenMode(pTasks, currentIdTask, globalClock);
+    chosenMode(pTasks, currentIdTask, globalClock, currentTaskQuantum);
 
     menu->clearTerminal();
 }
 
-void Simulator::showReadyTasks(const std::vector<TCB*>& pTasks, const int &currentIdTask, const unsigned int &globalClock)
+void Simulator::showReadyTasks(const std::vector<TCB*>& pTasks, const int &currentIdTask, const unsigned int &globalClock, const unsigned int& currentTaskQuantum)
 {
     menu->clearTerminal();
 
-    showMinimumInfo(currentIdTask, globalClock);
+    showMinimumInfo(currentIdTask, globalClock, currentTaskQuantum);
 
     // Mostra as informacoes das tarefas para o usuario
     std::cout << "Information about tasks in the ready queue, and the executed task:\n" << std::endl;
@@ -440,7 +435,7 @@ void Simulator::showReadyTasks(const std::vector<TCB*>& pTasks, const int &curre
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // limpa o buffer do cout
     std::cin.get();
 
-    chosenMode(pTasks, currentIdTask, globalClock);
+    chosenMode(pTasks, currentIdTask, globalClock, currentTaskQuantum);
 
     menu->clearTerminal();
 }

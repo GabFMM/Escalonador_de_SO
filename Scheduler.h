@@ -20,14 +20,14 @@ public:
 
     void setAlgorithm(Algorithm algo);
 
+    // manipulacao de readyTasks
     void setTasks(std::vector<TCB> t);
     std::vector<TCB>& getTasks();
-
     std::vector<int> getIdTasks();
-
+    TCB* getNextTask();
     void addTask(TCB task);
     void removeTask(unsigned int idTask);
     const bool existTask() const;
 
-    TCB* getNextTask();
+    void taskQuantumEnded();
 };

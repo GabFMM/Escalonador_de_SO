@@ -57,7 +57,8 @@ Standard colors:
 )";
 
 const std::string Menu::quantumText = R"(
-What is the value of the quantum?
+What is the value of the quantum? 
+If zero, the quantum will not interfere with the simulator.
 )";
 
 const std::string Menu::editText = R"(
@@ -318,7 +319,7 @@ void Menu::createQuantumScreen()
 
     std::cout << quantumText << std::endl;
 
-    simulator->setQuantum(checkEntryNumber((unsigned int)1, std::numeric_limits<unsigned int>::max()));
+    simulator->setQuantum(checkEntryNumber((unsigned int)0, std::numeric_limits<unsigned int>::max()));
 
     clearTerminal();
 }
@@ -341,9 +342,12 @@ void Menu::createEditScreen()
     }
     else if(option == 2){
         std::cout << "Previous value of the quantum: " << simulator->getQuantum() << std::endl;
-        std::cout << "\nWhat is the value of the new quantum?" << std::endl;
+        std::cout 
+            << "\nWhat is the value of the new quantum?" 
+            << "\nIf zero, the quantum will not interfere with the simulator."
+            << std::endl;
 
-        simulator->setQuantum(checkEntryNumber((unsigned int)1, std::numeric_limits<unsigned int>::max()));
+        simulator->setQuantum(checkEntryNumber((unsigned int)0, std::numeric_limits<unsigned int>::max()));
     }
     else{
         std::cout << "Current tasks information:" << std::endl;

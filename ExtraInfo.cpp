@@ -13,6 +13,7 @@ ExtraInfo::~ExtraInfo()
 
 void ExtraInfo::setAlgorithmScheduler(std::string algorithm)
 {
+    algorithmScheduler.clear(); // util se o algoritmo for editado
     algorithmScheduler.append(algorithm);
 }
 
