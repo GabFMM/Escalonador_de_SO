@@ -42,7 +42,7 @@ std::vector<unsigned int> Scheduler::getReadyTasksId()
 
     size_t tam = v.size();
     for(size_t i = 0; i < tam; i++)
-        v[i] = readyTasks[i]->getId();
+        v[i] = readyTasks[i + 1]->getId();
 
     return v;
 }
@@ -55,10 +55,10 @@ std::vector<std::variant<int, std::string>> Scheduler::getReadyTasksColor()
 
     size_t tam = v.size();
     for(size_t i = 0; i < tam; i++)
-        if(readyTasks[i]->getColor() != 0)
-            v[i] = std::variant<int, std::string>{readyTasks[i]->getColor()};
+        if(readyTasks[i + 1]->getColor() != 0)
+            v[i] = std::variant<int, std::string>{readyTasks[i + 1]->getColor()};
         else
-            v[i] = std::variant<int, std::string>{readyTasks[i]->getStrColor()};
+            v[i] = std::variant<int, std::string>{readyTasks[i + 1]->getStrColor()};
 
     return v;
 }

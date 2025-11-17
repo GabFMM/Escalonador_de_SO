@@ -132,8 +132,8 @@ void Simulator::executeNoDebugger()
 // método auxiliar que ocorre igualmente em executeDebugger e executeNoDebugger
 void Simulator::executeDefault(TCB **currentTask, unsigned int *globalClock, const unsigned int *deltaTime, unsigned int *currentTaskQuantum, unsigned int *timeLastInterrupt)
 {
-    // desenha os retangulos das tarefas prontas
-    if(*currentTask != nullptr)
+    // desenha as tarefas prontas
+    if(*globalClock > 0)
         imageGenerator->addRectsReadyTasks(scheduler->getReadyTasksId(), scheduler->getReadyTasksColor(), *globalClock, *globalClock - *deltaTime);
 
     // determina se o getNextTask do escalonador deve ser chamado
