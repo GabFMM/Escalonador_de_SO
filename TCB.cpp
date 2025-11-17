@@ -58,6 +58,7 @@ void TCB::setDuration(unsigned int duration) {
 
 void TCB::setStaticPriority(unsigned int priority) {
     this->staticPriority = priority;
+    this->dynamicPriority = priority;
 }
 
 void TCB::setDynamicPriority(unsigned int priority)

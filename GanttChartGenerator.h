@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <string>
 #include <iostream>
+#include <variant>
 
 #include "TCB.h"
 
@@ -36,6 +37,8 @@ public:
 
     void addRectTask(const unsigned int& idTask, const unsigned int& colorTask, unsigned int timeNow, unsigned int timeLastInterrupt);
     void addRectTask(const unsigned int& idTask, const std::string& colorTask, unsigned int timeNow, unsigned int timeLastInterrupt);
+
+    void addRectsReadyTasks(const std::vector<unsigned int>& readyTasksId, const std::vector<std::variant<int, std::string>>& readyTasksColor, unsigned int timeNow, unsigned int timeLastInterrupt);
 
     std::string toStrColor(const unsigned int& color);
 

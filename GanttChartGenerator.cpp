@@ -103,6 +103,43 @@ void GanttChartGenerator::addRectTask(const unsigned int &idTask, const std::str
         <text x=")" << timeNow * tpp + posAxisX.first << R"(" y=")" << posAxisX.second + 17.5 << R"(" font-size="10" fill="black">)" << timeNow << R"(</text>)";
 }
 
+void GanttChartGenerator::addRectsReadyTasks(const std::vector<unsigned int> &readyTasksId, const std::vector<std::variant<int, std::string>>& readyTasksColor, unsigned int timeNow, unsigned int timeLastInterrupt){
+    static unsigned int idClipPath = 0;
+    
+    // para cada tarefa pronta, cria um retangulo
+    size_t tam = readyTasksId.size();
+    for(size_t i = 0; i < tam; i++){
+        // Recupera as posicoes Y dos retangulos das tarefas prontas
+        unsigned int posYId = idPosYTasks[readyTasksId[i]];
+
+        // Verifica qual eh o tipo da cor
+        std::string color;
+        if(std::holds_alternative<int>(readyTasksColor[i]))
+            color = toStrColor(std::get<int>(readyTasksColor[i]));
+        else if(std::holds_alternative<std::string>(readyTasksColor[i]))
+            color = std::get<std::string>(readyTasksColor[i]);
+
+        // cria a tag clipPath (funcao: produz uma mascara na regiao)
+        // usada para criar a borda interna
+        buffer << "\n" <<
+            R"(
+            <defs>
+                <clipPath id=")" << idClipPath << R"(">
+                    <rect x=")" << std::fixed << std::setprecision(2) << timeLastInterrupt * tpp + posAxisX.first + 2 << R"(" y=")" << posYId - 10 << R"(" width=")" << std::fixed << std::setprecision(2) << (timeNow * tpp) - (timeLastInterrupt * tpp) << R"(" height=")" << 13 << R"("></rect>
+                </clipPath>
+            </defs>
+            )";
+
+        // cria a tag rect
+        buffer << "\n" <<
+            R"(
+            <rect x=")" << std::fixed << std::setprecision(2) << timeLastInterrupt * tpp + posAxisX.first + 2 << R"(" y=")" << posYId - 10 << R"(" width=")" << std::fixed << std::setprecision(2) << (timeNow * tpp) - (timeLastInterrupt * tpp) << R"(" height=")" << 13 << R"(" fill="none" stroke=")" << color << R"delimitador(" stroke-width="4" clip-path="url(#)delimitador" << idClipPath << R"delimitador()"></rect>)delimitador";
+        
+        // Incrementa o id, para que uma mascara nao seja igual a outra
+        idClipPath++;
+    }
+}
+
 std::string GanttChartGenerator::toStrColor(const unsigned int &color)
 {
     std::string colors[6];

@@ -35,6 +35,34 @@ std::vector<unsigned int> Scheduler::getIdTasks()
     return idTasks;
 }
 
+std::vector<unsigned int> Scheduler::getReadyTasksId()
+{
+    // -1, pois a primeira eh sempre a tarefa "executada"
+    std::vector<unsigned int> v(readyTasks.size() - 1); 
+
+    size_t tam = v.size();
+    for(size_t i = 0; i < tam; i++)
+        v[i] = readyTasks[i]->getId();
+
+    return v;
+}
+
+// -1, pois a primeira eh sempre a tarefa "executada"
+std::vector<std::variant<int, std::string>> Scheduler::getReadyTasksColor()
+{
+    // o variant pode assumir um dos dois tipos, a depender de qual foi armazenado
+    std::vector<std::variant<int, std::string>> v(readyTasks.size() - 1);
+
+    size_t tam = v.size();
+    for(size_t i = 0; i < tam; i++)
+        if(readyTasks[i]->getColor() != 0)
+            v[i] = std::variant<int, std::string>{readyTasks[i]->getColor()};
+        else
+            v[i] = std::variant<int, std::string>{readyTasks[i]->getStrColor()};
+
+    return v;
+}
+
 void Scheduler::addTask(TCB* task, const unsigned int& alpha)
 {
     if (task->getState() != TCB::State::New) return;

@@ -1,6 +1,6 @@
 Estrutura:
 
-algoritmo_escalonamento;quantum
+algoritmo_escalonamento;quantum;alfa
 id;cor;ingresso;duracao;prioridade
 
 Algoritmos permitidos:
@@ -8,10 +8,11 @@ Algoritmos permitidos:
 FIFO
 SRTF
 PRIOp
+PRIOPEnv
 
 Exemplo:
 
-FIFO;2
+FIFO;2;1
 0;1;4;2;1
 1;4;2;1;2
 2;3;0;3;3

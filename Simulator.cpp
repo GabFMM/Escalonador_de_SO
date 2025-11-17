@@ -132,6 +132,10 @@ void Simulator::executeNoDebugger()
 // método auxiliar que ocorre igualmente em executeDebugger e executeNoDebugger
 void Simulator::executeDefault(TCB **currentTask, unsigned int *globalClock, const unsigned int *deltaTime, unsigned int *currentTaskQuantum, unsigned int *timeLastInterrupt)
 {
+    // desenha os retangulos das tarefas prontas
+    if(*currentTask != nullptr)
+        imageGenerator->addRectsReadyTasks(scheduler->getReadyTasksId(), scheduler->getReadyTasksColor(), *globalClock, *globalClock - *deltaTime);
+
     // determina se o getNextTask do escalonador deve ser chamado
     bool interrupt_flag = false;
 
@@ -142,7 +146,7 @@ void Simulator::executeDefault(TCB **currentTask, unsigned int *globalClock, con
         // adiciona a(s) tarefa(s) na fila de prontas do escalonador
         size_t tam = indexTasks.size();
         for(size_t i = 0; i < tam; i++){
-            scheduler->addTask(tasks[indexTasks[i]]);
+            scheduler->addTask(tasks[indexTasks[i]], getAlpha());
         }
 
         interrupt_flag = true;
@@ -421,6 +425,8 @@ void Simulator::showReadyTasks(const unsigned int &currentIdTask, const unsigned
                 "Dynamic priority: " << t[i]->getDynamicPriority() <<
             std::endl;
         }
+
+        std::cout << std::endl;
     }
 
     std::cout << "Press enter to return to the options menu" << std::endl;
