@@ -5,7 +5,9 @@
 #include <vector>
 #include <limits>
 #include <variant>
+
 #include "TCB.h"
+#include "IO_Operation.h"
 
 class Simulator;
 
@@ -49,5 +51,5 @@ public:
     std::variant<unsigned int, std::string> checkEntryColor(unsigned int firstNumber, unsigned int lastOption);
     void clearTerminal();
     void setSimulator(Simulator* s);
-    void showTasks();
+    void showTasks(const std::vector<TCB*>& t);
 };

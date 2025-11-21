@@ -11,7 +11,7 @@ GanttChartGenerator::~GanttChartGenerator()
 }
 
 // sumDurationTasks deve estar em ticks
-void GanttChartGenerator::createAxis(size_t numTasks, std::vector<unsigned int> idTasks, unsigned int sumDurationTasks, unsigned int maxEntryTime)
+void GanttChartGenerator::createAxis(size_t numTasks, std::vector<unsigned int> idTasks, unsigned int sumDurationTasks, unsigned int sumIO_DurationTasks, unsigned int maxEntryTime)
 {
     // Calcula o tamanho do eixo Y
     // 13 corresponde a altura em pixels do retangulo
@@ -31,7 +31,7 @@ void GanttChartGenerator::createAxis(size_t numTasks, std::vector<unsigned int> 
     posAxisX.second = posAxisY.second + tamAxisY;
 
     // Define a relacao ticks por pixel
-    tpp = (double)tamAxisX / ((double)sumDurationTasks + (double)maxEntryTime);
+    tpp = (double)tamAxisX / ((double)sumDurationTasks + (double)sumIO_DurationTasks + (double)maxEntryTime);
 
     // Cria os eixos com os nomes deles
     buffer << "\n" << 
@@ -60,7 +60,7 @@ void GanttChartGenerator::createAxis(size_t numTasks, std::vector<unsigned int> 
     // Preenche o ultimo tick execudo no escalonador
     buffer << "\n" <<
         R"(
-        <text x=")" << tamX + 45 << R"(" y=")" << tamY + 60 + 17.5 << R"(" font-size="10" fill="black">)" << sumDurationTasks + maxEntryTime << R"(</text>)";
+        <text x=")" << tamX + 45 << R"(" y=")" << tamY + 60 + 17.5 << R"(" font-size="10" fill="black">)" << sumDurationTasks + sumIO_DurationTasks + maxEntryTime << R"(</text>)";
 }
 
 // time in ticks
@@ -103,7 +103,7 @@ void GanttChartGenerator::addRectTask(const unsigned int &idTask, const std::str
         <text x=")" << timeNow * tpp + posAxisX.first << R"(" y=")" << posAxisX.second + 17.5 << R"(" font-size="10" fill="black">)" << timeNow << R"(</text>)";
 }
 
-void GanttChartGenerator::addRectsReadyTasks(const std::vector<unsigned int> &readyTasksId, const std::vector<std::variant<int, std::string>>& readyTasksColor, unsigned int timeNow, unsigned int timeLastInterrupt){
+void GanttChartGenerator::addRectsTasks(const std::vector<unsigned int> &readyTasksId, const std::vector<std::variant<int, std::string>>& readyTasksColor, unsigned int timeNow, unsigned int timeLastInterrupt){
     static unsigned int idClipPath = 0;
     
     // para cada tarefa pronta, cria um retangulo

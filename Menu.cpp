@@ -85,6 +85,7 @@ What task information do you want change?
 3 -> Entry time
 4 -> Duration
 5 -> Priority
+6 -> IO operations
 
 Enter the desired option (number):
 )";
@@ -151,10 +152,8 @@ void Menu::createConfirmationScreen(const std::vector<TCB*>& tasks)
     std::cout << "Quantum duration: " << simulator->getQuantum() << std::endl;
     std::cout << "Alpha value: " << simulator->getAlpha() << "\n" << std::endl;
 
-    std::cout << "Tasks:\n" << std::endl;
-
     // Todas as informacoes de cada uma das tarefas sao mostradas no terminal 
-    showTasks();
+    showTasks(tasks);
 
     std::flush(std::cout);
 
@@ -262,7 +261,8 @@ void Menu::createTaskScreen()
             << "Color: 1 (red)\n"
             << "Entry time: 1\n"
             << "Duration: 1\n"
-            << "Priority: 1\n" <<
+            << "Priority: 1\n"
+            << "No I/O operations\n" <<
         std::endl;
 
         std::string res = checkEntryString(targets);
@@ -282,7 +282,7 @@ void Menu::createTaskScreen()
             clearTerminal();
 
             TCB task;
-            int num;
+            unsigned int num;
 
             task.setId(numTasks);
 
@@ -313,6 +313,37 @@ void Menu::createTaskScreen()
             num = checkEntryNumber((unsigned int)0, std::numeric_limits<unsigned int>::max());
 
             task.setStaticPriority(num);
+
+            // Operacoes I/O
+            res = "Y";
+            while(res == "Y" || res == "y"){
+                std::cout << "\nDo you want to add an IO operation? (Y or N)" << std::endl;
+                res = checkEntryString(std::vector<std::string>{"Y", "y", "N", "n"});
+
+                if(res == "N" || res == "n") continue;
+
+                unsigned int IO_InitialTime = 0;
+                unsigned int IO_duration = 0;
+
+                std::cout 
+                    << "\nEnter the IO operation initial time (relative to task entry time):" 
+                    << "\nThe value cannot be bigger to task entry time."
+                    << std::endl;
+                IO_InitialTime = checkEntryNumber((unsigned int)0, (unsigned int)task.getEntryTime());
+
+                std::cout 
+                    << "\nEnter the IO operation duration time:"
+                    << std::endl;
+                IO_duration = checkEntryNumber((unsigned int)0, std::numeric_limits<unsigned int>::max());
+
+                if(!task.addIO_operation(std::pair<unsigned int, unsigned>{IO_InitialTime, IO_duration})){
+                    std::cout 
+                        << "The I/O operation cannot be inserted.\n" 
+                        << "Press any key to recreate the I/O operation again.\n"
+                        << std::endl;
+                    std::cin.get();
+                }
+            }
 
             numTasks++;
             simulator->addTask(task);
@@ -373,7 +404,7 @@ void Menu::createEditScreen()
 
         // Todas as informacoes de cada uma das tarefas sao mostradas no terminal 
         const std::vector<TCB*> tasks = simulator->getTasks();
-        showTasks();
+        showTasks(simulator->getTasks());
 
         std::cout << "Enter the ID of the task to be edited:" << std::endl;
         unsigned int idTask = checkEntryNumber((unsigned int)0, std::numeric_limits<unsigned int>::max());
@@ -412,10 +443,11 @@ void Menu::createEditScreen()
         }
 
         std::cout << editTaskText << std::endl;
-        option = checkEntryNumber((unsigned int)1, (unsigned int)5);
+        option = checkEntryNumber((unsigned int)1, (unsigned int)6);
 
         clearTerminal();
 
+        // edita o ID
         if(option == 1){
             std::cout << "Previous ID: " << tasks[i]->getId() << std::endl;
             std::cout << "What is the new ID value?\n" << std::endl;
@@ -432,6 +464,7 @@ void Menu::createEditScreen()
             // Atualiza o ID da tarefa
             simulator->updateTaskId(tasks[i]->getId(), newId);
         }
+        // Edita a cor
         else if(option == 2){
             if(tasks[i]->getColor() != 0)
                 std::cout << "Previous Color: " << tasks[i]->getColor() << std::endl;
@@ -459,6 +492,7 @@ void Menu::createEditScreen()
                 simulator->updateTaskColor(idTask, std::get<unsigned int>(var));
 
         }
+        // Edita o tempo de inicio
         else if(option == 3){
             std::cout << "Previous Entry Time: " << tasks[i]->getEntryTime() << std::endl;
             std::cout << "What is the new Entry time value?\n" << std::endl;
@@ -467,6 +501,7 @@ void Menu::createEditScreen()
 
             simulator->updateTaskEntryTime(tasks[i]->getId(), newEntryTime);
         }
+        // Edita a duracao
         else if(option == 4){
             std::cout << "Previous Duration: " << tasks[i]->getEntryTime() << std::endl;
             std::cout << "What is the new duration value?\n" << std::endl;
@@ -475,13 +510,78 @@ void Menu::createEditScreen()
 
             simulator->updateTaskDuration(tasks[i]->getId(), newDuration);
         }
-        else{
+        // Edita a prioridade estatica
+        else if(option == 5){
             std::cout << "Previous Priority: " << tasks[i]->getEntryTime() << std::endl;
             std::cout << "What is the new Priority value?\n" << std::endl;
             
             unsigned int newPriority = checkEntryNumber((unsigned int)0, std::numeric_limits<unsigned int>::max());
 
             simulator->updateTaskStaticPriority(tasks[i]->getId(), newPriority);
+        }
+        // Edita as operacoes I/O
+        else if(option == 6){
+            std::vector<IO_Operation> ops = tasks[i]->getIO_operations();
+
+            // verifica se ha operacoes I/O para a tarefa
+            if(!ops.size()){
+                std::cout << 
+                    "There isn't I/O operations for this task.\n" <<
+                    "Press any key to continue.\n" <<
+                std::endl;
+
+                std::cin.get();
+            }
+
+            std::cout << 
+                "What I/O operation do you want change?\n" <<
+                "Press the position of the I/O operation.\n" <<
+                "1 is the first operation and " << ops.size() << "is the last operation.\n" <<
+            std::endl;
+
+            unsigned int pos = checkEntryNumber((unsigned int)1, (unsigned int)ops.size());
+
+            // escolhe o que mudar (tempo de entrada ou duracao)
+            std::cout <<
+                "Choose an option to edit:\n\n"
+                "1 -> Operation's initial time;\n" <<
+                "2 -> Operation's duration time;\n" << 
+            std::endl;
+
+            int n = checkEntryNumber((unsigned int)1, (unsigned int)2);
+
+            // muda o tempo de entrada do I/O
+            if(n == 1){
+                std::cout <<
+                    "Previous value: " << ops[pos - 1].getInitialTime() << "\n" <<
+                    "What is the new initial time?\n" <<
+                std::endl;
+
+                if(!simulator->updateTaskIO_InitialTime(tasks[i]->getId(), ops[pos - 1].getInitialTime(), checkEntryNumber((unsigned int)0, (unsigned int)tasks[i]->getDuration()))){
+                    std::cout << 
+                        "This change cannot happen.\n" <<
+                        "Press any key to continue.\n" <<
+                    std::endl;
+
+                    std::cin.get();
+                }
+            }
+            // muda a duracao do I/O
+            else if(n == 2){
+                std::cout <<
+                    "Previous value: " << ops[pos - 1].getDuration() << "\n" <<
+                    "What is the new duration?\n" <<
+                std::endl;
+
+                if(!simulator->updateTaskIO_Duration(tasks[i]->getId(), ops[pos - 1].getInitialTime(), checkEntryNumber((unsigned int)0, std::numeric_limits<unsigned int>::max()))){
+                    std::cout << 
+                        "This change cannot happen.\n" <<
+                        "Press any key to continue.\n" <<
+                    std::endl;
+
+                    std::cin.get();
+                }
+            }
         }
     }
 
@@ -598,29 +698,49 @@ void Menu::setSimulator(Simulator *s)
         simulator = s;
 }
 
-void Menu::showTasks()
+void Menu::showTasks(const std::vector<TCB*>& t)
 {
-    const std::vector<TCB*>& tasks = simulator->getTasks();
-    size_t tam = tasks.size();
+    std::cout << "Tasks information:\n" << std::endl;
+    
+    size_t tam = t.size();
     for(int i = 0; i < tam; i++){
         // Verifica o tipo da cor
-        if(tasks[i]->getColor() != 0){
+        if(t[i]->getColor() != 0){
             std::cout << 
-                "ID: " << tasks[i]->getId() << "\n" <<
-                "Color: " << tasks[i]->getColor() << "\n" <<
-                "Entry time: " << tasks[i]->getEntryTime() << "\n" <<
-                "Duration: " << tasks[i]->getDuration() << "\n" <<
-                "Priority: " << tasks[i]->getStaticPriority() << "\n" <<
-            std::endl;
+                "ID: " << t[i]->getId() << "\n" <<
+                "Color: " << t[i]->getColor() << "\n" <<
+                "Entry time: " << t[i]->getEntryTime() << "\n" <<
+                "Duration: " << t[i]->getDuration() << "\n" <<
+                "Remainig time: : " << t[i]->getRemainingTime() << "\n" <<
+                "Static priority: " << t[i]->getStaticPriority() << "\n" <<
+                "Dynamic priority: " << t[i]->getDynamicPriority() << "\n";
         }
         else{
             std::cout << 
-                "ID: " << tasks[i]->getId() << "\n" <<
-                "Color: " << tasks[i]->getStrColor() << "\n" <<
-                "Entry time: " << tasks[i]->getEntryTime() << "\n" <<
-                "Duration: " << tasks[i]->getDuration() << "\n" <<
-                "Priority: " << tasks[i]->getStaticPriority() << "\n" <<
+                "ID: " << t[i]->getId() << "\n" <<
+                "Color: " << t[i]->getStrColor() << "\n" <<
+                "Entry time: " << t[i]->getEntryTime() << "\n" <<
+                "Duration: " << t[i]->getDuration() << "\n" <<
+                "Remainig time: : " << t[i]->getRemainingTime() << "\n" <<
+                "Static priority: " << t[i]->getStaticPriority() << "\n"
+                "Dynamic priority: " << t[i]->getDynamicPriority() << "\n";
+        }
+
+        // Mostra as operacoes I/O
+        std::vector<IO_Operation> ops = t[i]->getIO_operations();
+        size_t tam = ops.size();
+        for(size_t j = 0; j < tam; j++){
+            std::cout <<
+                "I/O initial time: " << ops[j].getInitialTime() << "\n" <<
+                "I/O duration: " << ops[j].getDuration() << "\n" <<
+                "I/O remainig time: " << ops[j].getRemainingTime() << "\n" <<
             std::endl;
         }
+
+        // Verifica se a tarefa acabou
+        if(t[i]->getEndTime() != std::numeric_limits<unsigned int>::max())
+            std::cout << "End time: " << t[i]->getEndTime() << "\n";
+
+        std::cout << std::endl;
     }
 }

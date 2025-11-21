@@ -37,6 +37,10 @@ std::vector<unsigned int> Scheduler::getIdTasks()
 
 std::vector<unsigned int> Scheduler::getReadyTasksId()
 {
+    // verifica se tem tarefa "executada"
+    if(!readyTasks.size()) 
+        return std::vector<unsigned int>(0);
+
     // -1, pois a primeira eh sempre a tarefa "executada"
     std::vector<unsigned int> v(readyTasks.size() - 1); 
 
@@ -50,7 +54,12 @@ std::vector<unsigned int> Scheduler::getReadyTasksId()
 // -1, pois a primeira eh sempre a tarefa "executada"
 std::vector<std::variant<int, std::string>> Scheduler::getReadyTasksColor()
 {
+    // verifica se tem tarefa "executada"
+    if(!readyTasks.size()) 
+        return std::vector<std::variant<int, std::string>>(0);
+
     // o variant pode assumir um dos dois tipos, a depender de qual foi armazenado
+    // -1, pois a primeira eh sempre a tarefa "executada"
     std::vector<std::variant<int, std::string>> v(readyTasks.size() - 1);
 
     size_t tam = v.size();

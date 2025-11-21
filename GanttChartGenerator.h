@@ -33,12 +33,12 @@ public:
     GanttChartGenerator();
     ~GanttChartGenerator();
 
-    void createAxis(size_t numTasks, std::vector<unsigned int> idTasks, unsigned int sumDurationTasks, unsigned int maxEntryTime);
+    void createAxis(size_t numTasks, std::vector<unsigned int> idTasks, unsigned int sumDurationTasks, unsigned int sumIO_DurationTasks, unsigned int maxEntryTime);
 
     void addRectTask(const unsigned int& idTask, const unsigned int& colorTask, unsigned int timeNow, unsigned int timeLastInterrupt);
     void addRectTask(const unsigned int& idTask, const std::string& colorTask, unsigned int timeNow, unsigned int timeLastInterrupt);
 
-    void addRectsReadyTasks(const std::vector<unsigned int>& readyTasksId, const std::vector<std::variant<int, std::string>>& readyTasksColor, unsigned int timeNow, unsigned int timeLastInterrupt);
+    void addRectsTasks(const std::vector<unsigned int>& readyTasksId, const std::vector<std::variant<int, std::string>>& readyTasksColor, unsigned int timeNow, unsigned int timeLastInterrupt);
 
     std::string toStrColor(const unsigned int& color);
 
