@@ -47,7 +47,7 @@ void Simulator::start()
     menu->execute();
 }
 
-void Simulator::executeDebugger()
+void Simulator::preExecuteDefault()
 {
     // cria o tratador de operacoes I/O
     if(isThereAnIO_Operation())
@@ -57,15 +57,19 @@ void Simulator::executeDebugger()
     if(imageGenerator == nullptr)
         imageGenerator = new GanttChartGenerator(); 
 
-    // TO-DO: invés de chamar o getMaxEntryTime com O(n), fazer o createAxis depois de ordenar as tarefas por ordem de chegada
-    imageGenerator->createAxis(tasks.size(), getIdTasks(), sumDurationTasks(), sumIO_DurationTasks(), getMaxEntryTime());
-
     // ordena as tarefas por ordem de entrada
     std::sort(tasks.begin(), tasks.end(), 
         [](const TCB* t1, const TCB* t2){
             return t1->getEntryTime() < t2->getEntryTime();
         }
     );
+
+    imageGenerator->createAxis(tasks.size(), getIdTasks(), sumDurationTasks(), sumIO_DurationTasks(), tasks[tasks.size() - 1]->getEntryTime());
+}
+
+void Simulator::executeDebugger()
+{
+    preExecuteDefault();
 
     TCB* currentTask = nullptr;
     unsigned int timeLastInterrupt = 0; // in ticks
@@ -97,23 +101,7 @@ void Simulator::executeDebugger()
 
 void Simulator::executeNoDebugger()
 {
-    // cria o tratador de operacoes I/O
-    if(isThereAnIO_Operation())
-        io_handler = new IO_Handler();
-
-    // cria o gerador de imagem
-    if(imageGenerator == nullptr)
-        imageGenerator = new GanttChartGenerator(); 
-
-    // TO-DO: invés de chamar o getMaxEntryTime com O(n), fazer o createAxis depois de ordenar as tarefas por ordem de chegada
-    imageGenerator->createAxis(tasks.size(), getIdTasks(), sumDurationTasks(), sumIO_DurationTasks(), getMaxEntryTime());
-
-    // ordena as tarefas por ordem de entrada
-    std::sort(tasks.begin(), tasks.end(), 
-        [](const TCB* t1, const TCB* t2){
-            return t1->getEntryTime() < t2->getEntryTime();
-        }
-    );
+    preExecuteDefault();
 
     TCB* currentTask = nullptr;
     unsigned int timeLastInterrupt = 0; // in ticks

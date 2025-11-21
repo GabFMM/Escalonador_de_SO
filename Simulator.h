@@ -32,6 +32,7 @@ public:
     ~Simulator();
 
     void start();
+    void preExecuteDefault();
     void executeDebugger();
     void executeNoDebugger();
     void executeDefault(TCB** currentTask, unsigned int* globalClock, const unsigned int* deltaTime, unsigned int* currentTaskQuantum, unsigned int* timeLastInterrupt);
