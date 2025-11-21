@@ -27,6 +27,8 @@ add_executable(Scheduler.exe
 	TCB.h
 	IO_operation.cpp
 	IO_operation.h
+	IO_Handler.cpp
+	IO_Handler.h
 )
 
 # Build type padrão: Debug

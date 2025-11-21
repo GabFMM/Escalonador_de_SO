@@ -12,6 +12,7 @@
 #include "TCB.h"
 #include "ExtraInfo.h"
 #include "IO_Operation.h"
+#include "IO_Handler.h"
 
 class Menu;
 
@@ -20,14 +21,11 @@ class Simulator
 private:
     Menu* menu;
     Scheduler* scheduler;
+    IO_Handler* io_handler;
     GanttChartGenerator* imageGenerator;
     ExtraInfo extraInfo;
 
     std::vector<TCB*> tasks;
-
-    // TO-DO: estudar viabilidade de transferir tudo relacionado as tarefas suspensas 
-    // em uma nova classe, similar ao que scheduler faz com a readyTasks
-    std::vector<TCB*> suspendedTasks;
 
 public:
     Simulator();
@@ -54,11 +52,6 @@ public:
     const bool updateTaskIO_InitialTime(const unsigned int& taskId, const unsigned int& oldInitialTime, const unsigned int& newInitialTime);
     const bool updateTaskIO_Duration(const unsigned int& taskId, const unsigned int& initialTime, const unsigned int& newDuration);
 
-    // manipulacao de suspendedTasks
-    void updateSuspendedTasks(const unsigned int& deltaTime);
-    std::vector<unsigned int> getSuspendedTasksId();
-    std::vector<std::variant<int, std::string>> getSuspendedTasksColor();
-
     // setters e getters
     void setAlgorithmScheduler(int i); // Usado por Menu.cpp
     void setAlgorithmScheduler(std::string algorithm);
@@ -72,10 +65,10 @@ public:
     unsigned int sumDurationTasks();
     unsigned int sumIO_DurationTasks();
     unsigned int getMaxEntryTime();
+    const bool isThereAnIO_Operation();
 
     const bool canAnyTasksEnter(double timeNow, std::vector<unsigned int>& indexTasks);
     const bool IsThereAnUnfinishedTask();
-    const bool canAnyIO_OperationBegin(const TCB* currentTask);
 
     // usado no loadArquive
     void trim(std::string &s);

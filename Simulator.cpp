@@ -4,6 +4,7 @@
 Simulator::Simulator() :
 menu(nullptr),
 scheduler(nullptr),
+io_handler(nullptr),
 imageGenerator(nullptr)
 {
 
@@ -18,14 +19,17 @@ Simulator::~Simulator()
     }
     tasks.clear();
 
-    suspendedTasks.clear();
-
     if(menu != nullptr){
         delete menu;
         menu = nullptr;
     }
 
     if(scheduler != nullptr){
+        delete scheduler;
+        scheduler = nullptr;
+    }
+
+    if(io_handler != nullptr){
         delete scheduler;
         scheduler = nullptr;
     }
@@ -45,6 +49,10 @@ void Simulator::start()
 
 void Simulator::executeDebugger()
 {
+    // cria o tratador de operacoes I/O
+    if(isThereAnIO_Operation())
+        io_handler = new IO_Handler();
+    
     // cria o gerador de imagem
     if(imageGenerator == nullptr)
         imageGenerator = new GanttChartGenerator(); 
@@ -89,6 +97,10 @@ void Simulator::executeDebugger()
 
 void Simulator::executeNoDebugger()
 {
+    // cria o tratador de operacoes I/O
+    if(isThereAnIO_Operation())
+        io_handler = new IO_Handler();
+
     // cria o gerador de imagem
     if(imageGenerator == nullptr)
         imageGenerator = new GanttChartGenerator(); 
@@ -133,14 +145,14 @@ void Simulator::executeDefault(TCB **currentTask, unsigned int *globalClock, con
         imageGenerator->addRectsTasks(scheduler->getReadyTasksId(), scheduler->getReadyTasksColor(), *globalClock, *globalClock - *deltaTime);
 
         // desenha as tarefas suspensas
-        imageGenerator->addRectsTasks(getSuspendedTasksId(), getSuspendedTasksColor(), *globalClock, *globalClock - *deltaTime);
+        imageGenerator->addRectsTasks(io_handler->getSuspendedTasksId(), io_handler->getSuspendedTasksColor(), *globalClock, *globalClock - *deltaTime);
     }
 
     // determina se o getNextTask do escalonador deve ser chamado
     bool interrupt_flag = false;
 
     // atualiza as tarefas suspensas
-    updateSuspendedTasks(*deltaTime);
+    io_handler->updateSuspendedTasks(*deltaTime);
 
     // verifica se o tempo atual corresponde a alguma tarefa que pode entrar no escalonador
     std::vector<unsigned int> indexTasks;
@@ -166,7 +178,7 @@ void Simulator::executeDefault(TCB **currentTask, unsigned int *globalClock, con
         interrupt_flag = 
             (*currentTask)->getRemainingTime() <= 0 || 
             (getQuantum() > 0 && *currentTaskQuantum >= getQuantum()) || 
-            canAnyIO_OperationBegin(*currentTask);
+            io_handler->canAnyIO_OperationBegin(*currentTask);
     }
 
     // Se houve interrupcao
@@ -206,7 +218,7 @@ void Simulator::executeDefault(TCB **currentTask, unsigned int *globalClock, con
             *currentTaskQuantum = 0;
         }
         // se alguma operacao I/O da tarefa pode comecar
-        else if(*currentTask != nullptr && canAnyIO_OperationBegin(*currentTask)){
+        else if(*currentTask != nullptr && io_handler->canAnyIO_OperationBegin(*currentTask)){
             // atualiza o quantum da tarefa
             *currentTaskQuantum = 0;
 
@@ -217,7 +229,7 @@ void Simulator::executeDefault(TCB **currentTask, unsigned int *globalClock, con
             scheduler->removeTask((*currentTask)->getId());
 
             // adiciono a tarefa na fila de suspendidos
-            suspendedTasks.push_back(*currentTask);
+            io_handler->addSuspendedTask(*currentTask);
 
             // "executa" outra tarefa no processador
             (*currentTask) = scheduler->getNextTask();
@@ -418,7 +430,7 @@ void Simulator::showSuspendedTasks(const unsigned int &currentIdTask, const unsi
     // Mostra as informacoes das tarefas para o usuario
     std::cout << "Information about tasks in the suspended set:\n" << std::endl;
 
-    menu->showTasks(suspendedTasks);
+    menu->showTasks(io_handler->getSuspendedTasks());
 
     std::cout << "Press enter to return to the options menu" << std::endl;
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // limpa o buffer do cout
@@ -792,65 +804,6 @@ const bool Simulator::updateTaskIO_Duration(const unsigned int& taskId, const un
     return tasks[i]->addIO_operation(std::pair<unsigned int, unsigned int>{initialTime, newDuration});
 }
 
-void Simulator::updateSuspendedTasks(const unsigned int &deltaTime)
-{
-    auto it = suspendedTasks.begin();
-
-    while (it != suspendedTasks.end()) {
-
-        TCB* tcb = *it;
-
-        // pega uma única vez
-        IO_Operation op = tcb->getFirstIO_Operation();
-        unsigned int initialTime = op.getInitialTime();
-
-        // atualiza
-        tcb->setIO_OperationRemainingTime(initialTime,
-            op.getRemainingTime() - deltaTime);
-
-        // pega novamente só depois de atualizar
-        op = tcb->getFirstIO_Operation();
-
-        if (op.getRemainingTime() <= 0) {
-
-            tcb->setState(TCB::State::New);
-
-            tcb->removeIO_operation(initialTime);
-
-            it = suspendedTasks.erase(it); // move o iterador
-        }
-        else {
-            ++it;
-        }
-    }
-
-}
-
-std::vector<unsigned int> Simulator::getSuspendedTasksId()
-{
-    std::vector<unsigned int> ids(suspendedTasks.size());
-
-    size_t tam = ids.size();
-    for(size_t i = 0; i < tam; i++)
-        ids[i] =  suspendedTasks[i]->getId();
-
-    return ids;
-}
-
-std::vector<std::variant<int, std::string>> Simulator::getSuspendedTasksColor()
-{
-    std::vector<std::variant<int, std::string>> colors(suspendedTasks.size());
-
-    size_t tam = colors.size();
-    for(size_t i = 0; i < tam; i++)
-        if(suspendedTasks[i]->getColor() != 0)
-            colors[i] = suspendedTasks[i]->getColor();
-        else
-            colors[i] = suspendedTasks[i]->getStrColor();
-
-    return colors;
-}
-
 void Simulator::setAlgorithmScheduler(int i)
 {
     if(scheduler == nullptr)
@@ -989,6 +942,16 @@ unsigned int Simulator::getMaxEntryTime()
     return max;
 }
 
+const bool Simulator::isThereAnIO_Operation()
+{
+    size_t tam = tasks.size();
+    for(size_t i = 0; i < tam; i++)
+        if(tasks[i]->getIO_operations().size())
+            return true;
+
+    return false;
+}
+
 // timeNow em ticks
 const bool Simulator::canAnyTasksEnter(double timeNow, std::vector<unsigned int>& indexTasks)
 {
@@ -1015,24 +978,5 @@ const bool Simulator::IsThereAnUnfinishedTask()
         if(tasks[i]->getState() != TCB::State::Finished)
             return true;
 
-    return false;
-}
-
-// currentTask sempre deve ser diferente de nulo
-const bool Simulator::canAnyIO_OperationBegin(const TCB *currentTask)
-{
-    std::vector<IO_Operation> ops = currentTask->getIO_operations();
-    size_t tam = ops.size();
-
-    // calcula o tempo de execucao da tarefa
-    // sem risco de ser negativo
-    unsigned int taskExecutedTime = currentTask->getDuration() - currentTask->getRemainingTime();
-
-    // as operacoes estao ordenadas por tempo
-    // entao nao vai ser tao custoso essa procura
-    for(size_t i = 0; i < tam; i++)
-        if(ops[i].getInitialTime() == taskExecutedTime)
-            return true;
-    
     return false;
 }

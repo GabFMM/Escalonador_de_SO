@@ -305,7 +305,7 @@ void Menu::createTaskScreen()
             task.setEntryTime(num);
 
             std::cout << "\nEnter the task duration:" << std::endl;
-            num = checkEntryNumber((unsigned int)0, std::numeric_limits<unsigned int>::max());
+            num = checkEntryNumber((unsigned int)1, std::numeric_limits<unsigned int>::max());
 
             task.setDuration(num);
 
@@ -334,7 +334,7 @@ void Menu::createTaskScreen()
                 std::cout 
                     << "\nEnter the IO operation duration time:"
                     << std::endl;
-                IO_duration = checkEntryNumber((unsigned int)0, std::numeric_limits<unsigned int>::max());
+                IO_duration = checkEntryNumber((unsigned int)1, std::numeric_limits<unsigned int>::max());
 
                 if(!task.addIO_operation(std::pair<unsigned int, unsigned>{IO_InitialTime, IO_duration})){
                     std::cout 
