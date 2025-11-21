@@ -47,6 +47,7 @@ void Simulator::start()
     menu->execute();
 }
 
+// método auxiliar que ocorre igualmente em executeDebugger e executeNoDebugger
 void Simulator::preExecuteDefault()
 {
     // cria o tratador de operacoes I/O
@@ -199,6 +200,9 @@ void Simulator::executeDefault(TCB **currentTask, unsigned int *globalClock, con
             // remove a tarefa na fila de prontas do escalonador
             scheduler->removeTask((*currentTask)->getId());
 
+            // atualiza a prioridade dinamica de cada tarefa
+            scheduler->updateDynamicPriorityTasks(getAlpha());
+
             // "executa" outra tarefa no processador
             (*currentTask) = scheduler->getNextTask();
 
@@ -219,6 +223,9 @@ void Simulator::executeDefault(TCB **currentTask, unsigned int *globalClock, con
             // adiciono a tarefa na fila de suspendidos
             io_handler->addSuspendedTask(*currentTask);
 
+            // atualiza a prioridade dinamica de cada tarefa -- conferir com o professor
+            // scheduler->updateDynamicPriorityTasks(getAlpha());
+
             // "executa" outra tarefa no processador
             (*currentTask) = scheduler->getNextTask();
         }
@@ -226,6 +233,9 @@ void Simulator::executeDefault(TCB **currentTask, unsigned int *globalClock, con
         else if(getQuantum() > 0 && *currentTaskQuantum >= getQuantum()){
             // atualiza o quantum da tarefa
             *currentTaskQuantum = 0;
+
+            // atualiza a prioridade dinamica de cada tarefa
+            scheduler->updateDynamicPriorityTasks(getAlpha());
 
             scheduler->taskQuantumEnded();
 
@@ -237,6 +247,9 @@ void Simulator::executeDefault(TCB **currentTask, unsigned int *globalClock, con
         else if(*currentTask != nullptr && indexTasks.size()){
             unsigned int previousTaskId = (*currentTask)->getId();
 
+            // atualiza a prioridade dinamica de cada tarefa
+            scheduler->updateDynamicPriorityTasks(getAlpha());
+
             // "executa" outra tarefa no processador
             (*currentTask)->setState(TCB::State::Ready);
             (*currentTask) = scheduler->getNextTask();
@@ -247,6 +260,9 @@ void Simulator::executeDefault(TCB **currentTask, unsigned int *globalClock, con
         }
         // se alguma tarefa entrou no escalonador, e nao existe uma tarefa "executada"
         else if(indexTasks.size()){
+            // atualiza a prioridade dinamica de cada tarefa
+            scheduler->updateDynamicPriorityTasks(getAlpha());
+
             // "executa" outra tarefa no processador
             (*currentTask) = scheduler->getNextTask();
 
@@ -338,11 +354,12 @@ void Simulator::chosenMode(const unsigned int& currentIdTask, const unsigned int
         "Enter the number of the desired option:\n\n" <<
         "1. See all information for each task;\n" <<
         "2. View information about tasks in the ready queue, and information about the executed task;\n" <<
-        "3. View information about tasks in the suspended set, and information about the executed task;\n"
-        "4. Proceed to the next instant of time;\n" <<
+        "3. View information about tasks in the suspended set;\n" <<
+        "4. Generate the partial Gantt Chart;\n" <<
+        "5. Proceed to the next instant of time;\n" <<
     std::endl;
 
-    int option = menu->checkEntryNumber(1, 4);
+    int option = menu->checkEntryNumber(1, 5);
 
     if(option == 1){
         showAllTasks(currentIdTask, globalClock, currentTaskQuantum);
@@ -352,6 +369,9 @@ void Simulator::chosenMode(const unsigned int& currentIdTask, const unsigned int
     }
     else if(option == 3){
         showSuspendedTasks(currentIdTask, globalClock, currentTaskQuantum);
+    }
+    else if(option == 4){
+        showGenerateGanttChart(currentIdTask, globalClock, currentTaskQuantum);
     }
 
     menu->clearTerminal();
@@ -421,6 +441,28 @@ void Simulator::showSuspendedTasks(const unsigned int &currentIdTask, const unsi
     menu->showTasks(io_handler->getSuspendedTasks());
 
     std::cout << "Press enter to return to the options menu" << std::endl;
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // limpa o buffer do cout
+    std::cin.get();
+
+    chosenMode(currentIdTask, globalClock, currentTaskQuantum);
+
+    menu->clearTerminal();
+}
+
+void Simulator::showGenerateGanttChart(const unsigned int &currentIdTask, const unsigned int &globalClock, const unsigned int &currentTaskQuantum)
+{
+    menu->clearTerminal();
+
+    showMinimumInfo(currentIdTask, globalClock, currentTaskQuantum);
+
+    // Gera o grafico das tarefas para o usuario
+    imageGenerator->generateImage();
+
+    std::cout 
+        << "Image successfully generated in image.svg.\n"
+        << "Press enter to return to the options menu.\n" 
+        << std::endl;
+
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // limpa o buffer do cout
     std::cin.get();
 

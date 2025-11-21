@@ -20,10 +20,10 @@ void GanttChartGenerator::createAxis(size_t numTasks, std::vector<unsigned int> 
     unsigned int tamY = numTasks * 13 + 26;
     tamAxisY = tamY;
     posAxisY.first = 45;
-    posAxisY.second = 60;
+    posAxisY.second = 50;
 
     // Calcula o eixo X em base de Y
-    unsigned int tamX = tamY * 3;
+    unsigned int tamX = tamY * 4;
     if(tamX > 1920)
         tamX = 1920;
     tamAxisX = tamX;
@@ -36,12 +36,12 @@ void GanttChartGenerator::createAxis(size_t numTasks, std::vector<unsigned int> 
     // Cria os eixos com os nomes deles
     buffer << "\n" << 
         R"(
-        <text x="15" y="30" font-size="20" fill="black">ID tasks</text>
-        <text x="36.5" y="78" font-size="40" fill="black">^</text>
-        <rect x="45" y="60" width="2" height=")" << tamY << R"(" fill="black"></rect>
-        <rect x="45" y=")" << tamY + 60 << R"(" width=")" << tamX << R"(" height="2" fill="black"></rect>
-        <text x=")" << tamX + 45 - 5 << R"(" y=")" << tamY + 60 + 11<< R"(" font-size="30" fill="black">></text>
-        <text x=")" << tamX + posAxisX.first + 30 << R"(" y=")" << tamY + 60 + 7.5<< R"(" font-size="20" fill="black">time (ticks)</text>)";
+        <text x="22.5" y="30" font-size="12.5" fill="black">ID tasks</text>
+        <text x="36.5" y=")" << posAxisY.second + 18 << R"(" font-size="40" fill="black">^</text>
+        <rect x="45" y=")" << posAxisY.second << R"(" width="2" height=")" << tamY << R"(" fill="black"></rect>
+        <rect x="45" y=")" << tamY + posAxisY.second << R"(" width=")" << tamX << R"(" height="2" fill="black"></rect>
+        <text x=")" << tamX + 45 - 5 << R"(" y=")" << tamY + posAxisY.second + 11 << R"(" font-size="30" fill="black">></text>
+        <text x=")" << tamX + posAxisX.first + 20 << R"(" y=")" << tamY + posAxisY.second + 6 << R"(" font-size="12.5" fill="black">time (ticks)</text>)";
 
     // Preenche o eixo Y com os ID's das tarefas
     idPosYTasks.reserve(numTasks); // limita o tamanho da tabela hash
@@ -49,7 +49,7 @@ void GanttChartGenerator::createAxis(size_t numTasks, std::vector<unsigned int> 
     for(size_t i = 0; i < numTasks; i++){
         // tamY + 60 para saber a posicao do canto inferior esquerdo do eixo Y
         // -13 para "desgrudar" o valor do ID do eixo X 
-        unsigned int posId = tamY + 60 - 13 * (i+1);
+        unsigned int posId = tamY + posAxisY.second - 13 * (i+1);
 
         buffer << "\n" << R"(<text x="30" y=")" << posId << R"(" font-size="10" fill="black">)" << idTasks[i] << R"(</text>)";
 
@@ -60,7 +60,7 @@ void GanttChartGenerator::createAxis(size_t numTasks, std::vector<unsigned int> 
     // Preenche o ultimo tick execudo no escalonador
     buffer << "\n" <<
         R"(
-        <text x=")" << tamX + 45 << R"(" y=")" << tamY + 60 + 17.5 << R"(" font-size="10" fill="black">)" << sumDurationTasks + sumIO_DurationTasks + maxEntryTime << R"(</text>)";
+        <text x=")" << tamX + 45 << R"(" y=")" << tamY + posAxisY.second + 17.5 << R"(" font-size="10" fill="black">)" << sumDurationTasks + sumIO_DurationTasks + maxEntryTime << R"(</text>)";
 }
 
 // time in ticks

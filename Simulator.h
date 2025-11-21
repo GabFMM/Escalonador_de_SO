@@ -85,4 +85,5 @@ public:
     void showAllTasks(const unsigned int& currentIdTask, const unsigned int& globalClock, const unsigned int& currentTaskQuantum);
     void showReadyTasks(const unsigned int& currentIdTask, const unsigned int& globalClock, const unsigned int& currentTaskQuantum);
     void showSuspendedTasks(const unsigned int& currentIdTask, const unsigned int& globalClock, const unsigned int& currentTaskQuantum);
+    void showGenerateGanttChart(const unsigned int& currentIdTask, const unsigned int& globalClock, const unsigned int& currentTaskQuantum);
 };
