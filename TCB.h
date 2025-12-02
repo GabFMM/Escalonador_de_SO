@@ -13,6 +13,7 @@
 
 class TCB{
 public:
+    // novo estado -> mudar sobrecarga do operador<<
     enum class State {New, Ready, Running, Suspended, Finished};
 
 private:
@@ -84,3 +85,6 @@ public:
     // Sobrecarga de operadores
     TCB& operator=(const TCB& t);
 };
+
+// tem que ser declarado fora da classe
+std::ostream& operator<<(std::ostream& os, TCB::State state);

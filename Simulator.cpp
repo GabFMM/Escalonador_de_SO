@@ -156,21 +156,34 @@ void Simulator::executeDefault(TCB **currentTask, unsigned int *globalClock, con
 
     // atualiza as tarefas suspensas
     // gera interrupcao, se alguma tarefa entrou no escalonador
-    // eh colocado o metodo na frente, pois a intencao eh sempre executa-los
+    // eh colocado o metodo na frente, pois a intencao eh sempre executa-lo
     interrupt_flag = io_handler->updateSuspendedTasks(*deltaTime) || interrupt_flag;
 
     // verifica se o tempo atual corresponde a alguma tarefa nova que pode entrar no escalonador
     // gera interrupcao, se alguma tarefa entrou no escalonador
-    // eh colocado o metodo na frente, pois a intencao eh sempre executa-los
-    interrupt_flag = checkNewTasks(*globalClock) || interrupt_flag;
+    // eh colocado o metodo na frente, pois a intencao eh sempre executa-lo
+    bool hasNewTasks = checkNewTasks(*globalClock);
+    interrupt_flag = hasNewTasks || interrupt_flag;
 
     // reliza as ações devidas a tarefa atual
     if(*currentTask != nullptr){
-        // atualiza o quatum da tarefa
+        // atualiza o quantum da tarefa
         *currentTaskQuantum += *deltaTime;
 
         // atualiza o tempo restante da tarefa
         (*currentTask)->setRemainingTime((*currentTask)->getRemainingTime() - *deltaTime);
+
+        // gera interrupcao se acontecer os casos abaixo
+        // eh colocado o metodo na frente, pois a intencao eh sempre executa-los
+        // o operador de = eh usado varias vezes para impedir curto-circuito
+        interrupt_flag = (*currentTask)->getRemainingTime() <= 0 || interrupt_flag;
+        interrupt_flag = (getQuantum() > 0 && *currentTaskQuantum >= getQuantum()) || interrupt_flag;
+        interrupt_flag = io_handler->canAnyIO_OperationBegin(*currentTask) || interrupt_flag;
+        interrupt_flag = mutexHandler->canAnyMutexActionOccur(*currentTask) || interrupt_flag;
+    }
+    // se nao houver tarefa executada, entao precisa escolher uma das prontas
+    else if(hasNewTasks){
+        (*currentTask) = scheduler->getNextTask();
 
         // gera interrupcao se acontecer os casos abaixo
         // eh colocado o metodo na frente, pois a intencao eh sempre executa-los

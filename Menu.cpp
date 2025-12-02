@@ -846,26 +846,21 @@ void Menu::showTasks(const std::vector<TCB*>& t)
     size_t tam = t.size();
     for(int i = 0; i < tam; i++){
         // Verifica o tipo da cor
-        if(t[i]->getColor() != 0){
-            std::cout << 
-                "ID: " << t[i]->getId() << "\n" <<
-                "Color: " << t[i]->getColor() << "\n" <<
-                "Entry time: " << t[i]->getEntryTime() << "\n" <<
-                "Duration: " << t[i]->getDuration() << "\n" <<
-                "Remainig time: : " << t[i]->getRemainingTime() << "\n" <<
-                "Static priority: " << t[i]->getStaticPriority() << "\n" <<
-                "Dynamic priority: " << t[i]->getDynamicPriority() << "\n";
-        }
-        else{
-            std::cout << 
-                "ID: " << t[i]->getId() << "\n" <<
-                "Color: " << t[i]->getStrColor() << "\n" <<
-                "Entry time: " << t[i]->getEntryTime() << "\n" <<
-                "Duration: " << t[i]->getDuration() << "\n" <<
-                "Remainig time: : " << t[i]->getRemainingTime() << "\n" <<
-                "Static priority: " << t[i]->getStaticPriority() << "\n"
-                "Dynamic priority: " << t[i]->getDynamicPriority() << "\n";
-        }
+        std::string color;
+        if(t[i]->getColor() != 0)
+            color = std::to_string(t[i]->getColor());
+        else
+            color = t[i]->getStrColor();
+
+        std::cout <<
+            "ID: " << t[i]->getId() << "\n" <<
+            "Color: " << color << "\n" <<
+            "Entry time: " << t[i]->getEntryTime() << "\n" <<
+            "Duration: " << t[i]->getDuration() << "\n" <<
+            "Remainig time: : " << t[i]->getRemainingTime() << "\n" <<
+            "Static priority: " << t[i]->getStaticPriority() << "\n" <<
+            "Dynamic priority: " << t[i]->getDynamicPriority() << "\n" <<
+            "Current state: " << t[i]->getState() << "\n";
 
         // Mostra as operacoes I/O
         std::vector<IO_Operation> ops = t[i]->getIO_operations();
@@ -892,8 +887,7 @@ void Menu::showTasks(const std::vector<TCB*>& t)
             std::cout <<
                 "Mutex type: " << type << "\n" <<
                 "Mutex ID: " << mutexesAction[j].getId() << "\n" <<
-                "Mutex time: " << mutexesAction[j].getTime() << "\n" <<
-            std::endl;
+                "Mutex time: " << mutexesAction[j].getTime() << "\n";
         }
 
         // Verifica se a tarefa acabou
@@ -909,26 +903,21 @@ void Menu::showTask(const TCB *t)
     std::cout << "Task information:\n" << std::endl;
 
     // Verifica o tipo da cor
-    if(t->getColor() != 0){
-        std::cout << 
-            "ID: " << t->getId() << "\n" <<
-            "Color: " << t->getColor() << "\n" <<
-            "Entry time: " << t->getEntryTime() << "\n" <<
-            "Duration: " << t->getDuration() << "\n" <<
-            "Remainig time: : " << t->getRemainingTime() << "\n" <<
-            "Static priority: " << t->getStaticPriority() << "\n" <<
-            "Dynamic priority: " << t->getDynamicPriority() << "\n";
-    }
-    else{
-        std::cout << 
-            "ID: " << t->getId() << "\n" <<
-            "Color: " << t->getStrColor() << "\n" <<
-            "Entry time: " << t->getEntryTime() << "\n" <<
-            "Duration: " << t->getDuration() << "\n" <<
-            "Remainig time: : " << t->getRemainingTime() << "\n" <<
-            "Static priority: " << t->getStaticPriority() << "\n"
-            "Dynamic priority: " << t->getDynamicPriority() << "\n";
-    }
+    std::string color;
+    if(t->getColor() != 0)
+        color = std::to_string(t->getColor());
+    else
+        color = t->getStrColor();
+        
+    std::cout <<
+        "ID: " << t->getId() << "\n" <<
+        "Color: " << color << "\n" <<
+        "Entry time: " << t->getEntryTime() << "\n" <<
+        "Duration: " << t->getDuration() << "\n" <<
+        "Remainig time: : " << t->getRemainingTime() << "\n" <<
+        "Static priority: " << t->getStaticPriority() << "\n" <<
+        "Dynamic priority: " << t->getDynamicPriority() << "\n" <<
+        "Current state: " << t->getState() << "\n";
 
     // Mostra as operacoes I/O
     std::vector<IO_Operation> ops = t->getIO_operations();

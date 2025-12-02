@@ -387,3 +387,30 @@ TCB& TCB::operator=(const TCB &t)
     }
     return *this; // retorna o objeto atual (por referência)
 }
+
+std::ostream& operator<<(std::ostream& os, TCB::State state){
+    switch (state)
+    {
+    case TCB::State::New:
+        os << "New";
+        break;
+
+    case TCB::State::Ready:
+        os << "Ready";
+        break;
+    
+    case TCB::State::Suspended:
+        os << "Suspended";
+        break;
+
+    case TCB::State::Running:
+        os << "Running";
+        break;
+    
+    case TCB::State::Finished:
+        os << "Finished";
+        break;
+    }
+
+    return os;
+}
