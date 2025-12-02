@@ -5,13 +5,16 @@
 #include <string>
 
 #include "TCB.h"
+#include "Scheduler.h"
 
 class IO_Handler{
 private:
+    Scheduler* scheduler;
+
     std::vector<TCB*> suspendedTasks;
 
 public:
-    IO_Handler();
+    IO_Handler(Scheduler* s);
     ~IO_Handler();
 
     // getters
@@ -19,8 +22,8 @@ public:
     std::vector<unsigned int> getSuspendedTasksId() const;
     std::vector<std::variant<int, std::string>> getSuspendedTasksColor() const;
 
-    void addSuspendedTask(TCB* task);
-    void updateSuspendedTasks(const unsigned int& deltaTime);
+    void addTask(TCB* task);
+    const bool updateSuspendedTasks(const unsigned int& deltaTime);
 
-    const bool canAnyIO_OperationBegin(const TCB* currentTask);
+    const bool canAnyIO_OperationBegin(TCB* currentTask);
 };

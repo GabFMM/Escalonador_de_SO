@@ -1,18 +1,48 @@
 Estrutura:
 
 algoritmo_escalonamento;quantum;alfa
-id;cor;ingresso;duracao;prioridade
+id;cor;ingresso;duracao;prioridade;IO:xx-yy;MLxx:yy;MUxx:yy
+
+Regras gerais:
+
+-> a primeira linha da configuração deve ocorrer somente uma vez
+-> com exceção da primeira linha da configuração, todas as demais linhas são referentes a configuração de tarefas
+-> o valor do quantum, se for maior que zero, interfere em todos os algoritmos
+-> o id deve ser único
+-> IO:xx-yy é uma operação I/O com começo no tempo xx e tem duração yy (os tempos são relativos a tarefa)
+-> MLxx:yy é uma ação de mutex lock com id xx e ocorrência no tempo yy
+-> MUxx:yy é uma ação de mutex unlock com id xx e ocorrência no tempo yy
+-> IO:xx-yy, MLxx:yy e MUxx:yy podem ocorrer mais de uma vez por tarefa
+-> todos os parametros quantitativos devem estar no formato de um número natural
+
+Parametros obrigatórios:
+
+-> algoritmo_escalonamento
+-> quantum
+-> id
+-> cor
+-> ingresso
+-> duracao
+-> prioridade
+
+Parametros facultativos:
+
+-> alfa
+-> IO:xx-yy
+-> MUxx:yy
+-> MLxx:yy
 
 Algoritmos permitidos:
 
-FIFO
-SRTF
-PRIOp
-PRIOPEnv
+-> RR
+-> FIFO
+-> SRTF
+-> PRIOp
+-> PRIOPEnv
 
 Exemplo:
 
 FIFO;2;1
-0;1;4;2;1
-1;4;2;1;2
+0;1;4;2;1;IO:01-01
+1;4;2;1;2;ML00:00;MU00:01
 2;3;0;3;3

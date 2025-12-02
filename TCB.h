@@ -6,8 +6,10 @@
 #include <algorithm>
 #include <stdexcept>
 #include <iostream>
+#include <unordered_set>
 
 #include "IO_Operation.h"
+#include "MutexAction.h"
 
 class TCB{
 public:
@@ -28,10 +30,8 @@ private:
     long long remainingTime; // talvez trocar long long por unsigned int
     unsigned int endTime;
 
-    // Conteiner de operacoes I/O
-    // first eh o instante de tempo de inicio relativo ao entryTime 
-    // second eh a duracao da operacao
     std::vector<IO_Operation> IO_operations;
+    std::vector<MutexAction> mutexesAction;
 
 public:
     TCB();
@@ -68,6 +68,16 @@ public:
     const bool addIO_operation(std::pair<unsigned int, unsigned int> op);
     void removeIO_operation(const unsigned int& initialTime);
     void setIO_OperationRemainingTime(const unsigned int& initialTime, const long long& newRemainingTime);
+
+    // Mutexes
+    std::vector<MutexAction> getMutexesAction() const;
+    std::vector<MutexAction> getMutexesAction(unsigned int id) const;
+    std::vector<unsigned int> getMutexesActionId() const;
+    void addMutexAction(MutexAction m);
+    void removeMutexAction(MutexAction m);
+    const bool validateMutexesAction(std::string& error);
+    const bool canAddMutexesAction(unsigned int id, unsigned int lockTime, unsigned int unlockTime);
+    const bool existMutexActionId(unsigned int id);
 
     void copyTCB(const TCB& t);
 

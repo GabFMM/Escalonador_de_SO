@@ -5,6 +5,7 @@ Simulator::Simulator() :
 menu(nullptr),
 scheduler(nullptr),
 io_handler(nullptr),
+mutexHandler(nullptr),
 imageGenerator(nullptr)
 {
 
@@ -30,9 +31,15 @@ Simulator::~Simulator()
     }
 
     if(io_handler != nullptr){
-        delete scheduler;
-        scheduler = nullptr;
+        delete io_handler;
+        io_handler = nullptr;
     }
+
+    if(mutexHandler != nullptr){
+        delete mutexHandler;
+        mutexHandler = nullptr;
+    }
+
 
     if(imageGenerator != nullptr){
         delete imageGenerator;
@@ -47,12 +54,15 @@ void Simulator::start()
     menu->execute();
 }
 
-// método auxiliar que ocorre igualmente em executeDebugger e executeNoDebugger
+// metodo auxiliar que ocorre igualmente em executeDebugger e executeNoDebugger
 void Simulator::preExecuteDefault()
 {
+    // cria o tratador de mutexes
+    mutexHandler = new MutexHandler(scheduler);
+    mutexHandler->createMutexes(tasks);
+
     // cria o tratador de operacoes I/O
-    if(isThereAnIO_Operation())
-        io_handler = new IO_Handler();
+    io_handler = new IO_Handler(scheduler);
     
     // cria o gerador de imagem
     if(imageGenerator == nullptr)
@@ -126,34 +136,33 @@ void Simulator::executeNoDebugger()
     generateImage();
 }
 
-// método auxiliar que ocorre igualmente em executeDebugger e executeNoDebugger
+// metodo auxiliar que ocorre igualmente em executeDebugger e executeNoDebugger
 void Simulator::executeDefault(TCB **currentTask, unsigned int *globalClock, const unsigned int *deltaTime, unsigned int *currentTaskQuantum, unsigned int *timeLastInterrupt)
 {
+    // desenha as tarefas prontas e suspensas
     if(*globalClock > 0){
         // desenha as tarefas prontas
         imageGenerator->addRectsTasks(scheduler->getReadyTasksId(), scheduler->getReadyTasksColor(), *globalClock, *globalClock - *deltaTime);
 
-        // desenha as tarefas suspensas
+        // desenha as tarefas suspensas por I/O
         imageGenerator->addRectsTasks(io_handler->getSuspendedTasksId(), io_handler->getSuspendedTasksColor(), *globalClock, *globalClock - *deltaTime);
+
+        // desenha as tarefas suspensas por mutex
+        imageGenerator->addRectsTasks(mutexHandler->getSuspendedTasksId(), mutexHandler->getSuspendedTasksColor(), *globalClock, *globalClock - *deltaTime);
     }
 
     // determina se o getNextTask do escalonador deve ser chamado
     bool interrupt_flag = false;
 
     // atualiza as tarefas suspensas
-    io_handler->updateSuspendedTasks(*deltaTime);
+    // gera interrupcao, se alguma tarefa entrou no escalonador
+    // eh colocado o metodo na frente, pois a intencao eh sempre executa-los
+    interrupt_flag = io_handler->updateSuspendedTasks(*deltaTime) || interrupt_flag;
 
-    // verifica se o tempo atual corresponde a alguma tarefa que pode entrar no escalonador
-    std::vector<unsigned int> indexTasks;
-    if(canAnyTasksEnter(*globalClock, indexTasks)){
-
-        // adiciona a(s) tarefa(s) na fila de prontas do escalonador
-        size_t tam = indexTasks.size();
-        for(size_t i = 0; i < tam; i++)
-            scheduler->addTask(tasks[indexTasks[i]], getAlpha());
-        
-        interrupt_flag = true;
-    }
+    // verifica se o tempo atual corresponde a alguma tarefa nova que pode entrar no escalonador
+    // gera interrupcao, se alguma tarefa entrou no escalonador
+    // eh colocado o metodo na frente, pois a intencao eh sempre executa-los
+    interrupt_flag = checkNewTasks(*globalClock) || interrupt_flag;
 
     // reliza as ações devidas a tarefa atual
     if(*currentTask != nullptr){
@@ -163,16 +172,18 @@ void Simulator::executeDefault(TCB **currentTask, unsigned int *globalClock, con
         // atualiza o tempo restante da tarefa
         (*currentTask)->setRemainingTime((*currentTask)->getRemainingTime() - *deltaTime);
 
-        // gera interrupcao somente se acontecer os casos abaixo
-        interrupt_flag = 
-            (*currentTask)->getRemainingTime() <= 0 || 
-            (getQuantum() > 0 && *currentTaskQuantum >= getQuantum()) || 
-            io_handler->canAnyIO_OperationBegin(*currentTask);
+        // gera interrupcao se acontecer os casos abaixo
+        // eh colocado o metodo na frente, pois a intencao eh sempre executa-los
+        // o operador de = eh usado varias vezes para impedir curto-circuito
+        interrupt_flag = (*currentTask)->getRemainingTime() <= 0 || interrupt_flag;
+        interrupt_flag = (getQuantum() > 0 && *currentTaskQuantum >= getQuantum()) || interrupt_flag;
+        interrupt_flag = io_handler->canAnyIO_OperationBegin(*currentTask) || interrupt_flag;
+        interrupt_flag = mutexHandler->canAnyMutexActionOccur(*currentTask) || interrupt_flag;
     }
 
     // Se houve interrupcao
     if(interrupt_flag){   
-        // 1. realizo acoes gerais para tratar a interrupcao
+        // --> 1. realizo acoes gerais para tratar a interrupcao
 
         // desenha na imagem o que aconteceu no processador ate agora
         // em base na tarefa atual
@@ -186,7 +197,10 @@ void Simulator::executeDefault(TCB **currentTask, unsigned int *globalClock, con
         // atualiza o tempo da ultima interrupcao
         *timeLastInterrupt = *globalClock;
 
-        // 2. realizo acoes especiais para tratar a interrupcao
+        // atualiza a prioridade dinamica de cada tarefa
+        scheduler->updateDynamicPriorityTasks();
+
+        // --> 2. realizo acoes especiais para tratar a interrupcao
 
         // se o tempo restante da tarefa "executada" acabou
         if(*currentTask != nullptr && (*currentTask)->getRemainingTime() <= 0){
@@ -197,81 +211,63 @@ void Simulator::executeDefault(TCB **currentTask, unsigned int *globalClock, con
             // marca como finalizado a tarefa
             (*currentTask)->setState(TCB::State::Finished);
 
-            // remove a tarefa na fila de prontas do escalonador
-            scheduler->removeTask((*currentTask)->getId());
-
-            // atualiza a prioridade dinamica de cada tarefa
-            scheduler->updateDynamicPriorityTasks(getAlpha());
-
             // "executa" outra tarefa no processador
             (*currentTask) = scheduler->getNextTask();
 
             // atualiza o quantum da tarefa
             *currentTaskQuantum = 0;
-        }
-        // se alguma operacao I/O da tarefa pode comecar
-        else if(*currentTask != nullptr && io_handler->canAnyIO_OperationBegin(*currentTask)){
-            // atualiza o quantum da tarefa
-            *currentTaskQuantum = 0;
-
-            // marca a tarefa como suspensa
-            (*currentTask)->setState(TCB::State::Suspended);
-
-            // removo da fila de prontas no escalonador
-            scheduler->removeTask((*currentTask)->getId());
-
-            // adiciono a tarefa na fila de suspendidos
-            io_handler->addSuspendedTask(*currentTask);
-
-            // atualiza a prioridade dinamica de cada tarefa -- conferir com o professor
-            // scheduler->updateDynamicPriorityTasks(getAlpha());
-
-            // "executa" outra tarefa no processador
-            (*currentTask) = scheduler->getNextTask();
         }
         // se o tempo de quantum da tarefa acabou
-        else if(getQuantum() > 0 && *currentTaskQuantum >= getQuantum()){
-            // atualiza o quantum da tarefa
+        // e a tarefa nao foi suspensa
+        else if(
+            getQuantum() > 0 && 
+            *currentTaskQuantum >= getQuantum() &&
+            *currentTask != nullptr &&
+            (*currentTask)->getState() != TCB::State::Suspended
+        ){
+            // atualiza o quantum
             *currentTaskQuantum = 0;
 
-            // atualiza a prioridade dinamica de cada tarefa
-            scheduler->updateDynamicPriorityTasks(getAlpha());
-
-            scheduler->taskQuantumEnded();
+            // readiciona a tarefa na fila de prontas do escalonador
+            // inves de usar o addExecutedTask, usa o addTask, 
+            // pois a intencao eh colocar a tarefa no fim da fila de prontas do escalonador
+            scheduler->addTask(*currentTask);
 
             // "executa" outra tarefa no processador
-            (*currentTask)->setState(TCB::State::Ready);
             (*currentTask) = scheduler->getNextTask();
         }
-        // se alguma tarefa entrou no escalonador, e existe uma tarefa "executada"
-        else if(*currentTask != nullptr && indexTasks.size()){
-            unsigned int previousTaskId = (*currentTask)->getId();
-
-            // atualiza a prioridade dinamica de cada tarefa
-            scheduler->updateDynamicPriorityTasks(getAlpha());
-
+        // se a tarefa ficou suspensa
+        else if(*currentTask != nullptr && (*currentTask)->getState() == TCB::State::Suspended){
             // "executa" outra tarefa no processador
-            (*currentTask)->setState(TCB::State::Ready);
             (*currentTask) = scheduler->getNextTask();
 
-            // verifica se houve uma troca de tarefas
+            // atualiza o quantum
+            *currentTaskQuantum = 0;
+        }
+        // ocorre quando:
+        // uma tarefa entrou na fila de prontas do escalonador e existe uma tarefa executada
+        // seja por causa do checkNewTasks, do io_handler ou do mutexHandler
+        else if(*currentTask != nullptr){
+            unsigned int previousTaskId = (*currentTask)->getId();
+
+            // readiciona a tarefa na fila de prontas do escalonador
+            scheduler->addExecutedTask(*currentTask);
+
+            // "executa" outra tarefa no processador
+            (*currentTask) = scheduler->getNextTask();
+
+            // verifica se houve uma troca de tarefas, se sim atualiza o quantum
             if(previousTaskId != (*currentTask)->getId())
                 *currentTaskQuantum = 0;
         }
         // se alguma tarefa entrou no escalonador, e nao existe uma tarefa "executada"
-        else if(indexTasks.size()){
-            // atualiza a prioridade dinamica de cada tarefa
-            scheduler->updateDynamicPriorityTasks(getAlpha());
-
+        else{
             // "executa" outra tarefa no processador
             (*currentTask) = scheduler->getNextTask();
 
             *currentTaskQuantum = 0;
         }
     }
-
-    if(*currentTask != nullptr)
-        (*currentTask)->setState(TCB::State::Running);
 }
 
 // função auxiliar para trim (remove espaços no início e no fim)
@@ -289,7 +285,7 @@ void Simulator::remove_cr(std::string &s) {
     s.erase(std::remove(s.begin(), s.end(), '\r'), s.end());
 }
 
-const bool Simulator::existId(unsigned int id)
+const bool Simulator::existTaskId(unsigned int id)
 {
     size_t tam = tasks.size();
     for(size_t i = 0; i < tam; i++)
@@ -309,7 +305,7 @@ unsigned int Simulator::modifyId(unsigned int id)
     unsigned int numAttempts = 0;
     
     // metodo escolhido: dou preferencia aos numeros menores
-    while(existId(newId)){
+    while(existTaskId(newId)){
         std::uniform_int_distribution<unsigned int> dist(0, factor - 1);
         newId = dist(gen);
 
@@ -535,7 +531,9 @@ std::vector<TCB*> Simulator::loadArquive() {
         // valida alpha
         try {
             int a = std::stoi(alphaStr);
-            extraInfo.setAlpha(a);
+            if(scheduler == nullptr)
+                scheduler = new Scheduler();
+            scheduler->setAlpha(a);
         } catch (...) {
             std::cerr << "Invalid alpha value: '" << alphaStr << "'" << std::endl;
             return std::vector<TCB*>();
@@ -543,7 +541,7 @@ std::vector<TCB*> Simulator::loadArquive() {
     }
 
     // 2) Ler o resto das linhas — cada linha é uma tarefa no formato:
-    // id;color;entry;duration;priority
+    // id;color;entry;duration;priority;[...]
     while (std::getline(file, line)) {
         remove_cr(line);
         trim(line);
@@ -591,16 +589,18 @@ std::vector<TCB*> Simulator::loadArquive() {
             }
             catch (...){
                 std::cerr << "Bad or missing ID in line: " << line << std::endl; 
+                delete task;
                 continue;
             }
         }
         else{
             std::cerr << "Bad or missing ID in line: " << line << std::endl; 
+            delete task;
             continue;
         }
 
         // verifica se o ID ja existe
-        if(existId(tmp)){
+        if(existTaskId(tmp)){
             // muda o valor dele
             int prev = tmp;
             tmp = modifyId(tmp);
@@ -622,6 +622,7 @@ std::vector<TCB*> Simulator::loadArquive() {
             }
             else{
                 std::cerr << "Bad or missing Color in line: " << line << std::endl; 
+                delete task;
                 continue; 
             }
         }
@@ -629,6 +630,7 @@ std::vector<TCB*> Simulator::loadArquive() {
         // Entry time
         if (!safeGetInt(tmp)) { 
             std::cerr << "Bad or missing EntryTime in line: " << line << std::endl; 
+            delete task;
             continue; 
         }
         task->setEntryTime(tmp);
@@ -636,6 +638,7 @@ std::vector<TCB*> Simulator::loadArquive() {
         // Duration
         if (!safeGetInt(tmp)) { 
             std::cerr << "Bad or missing Duration in line: " << line << std::endl; 
+            delete task;
             continue; 
         }
         task->setDuration(tmp);
@@ -643,52 +646,139 @@ std::vector<TCB*> Simulator::loadArquive() {
         // Priority
         if (!safeGetInt(tmp)) { 
             std::cerr << "Bad or missing Priority in line: " << line << std::endl; 
+            delete task;
             continue; 
         }
         task->setStaticPriority(tmp);
 
-        // Operações I/O
+        // Operações I/O ou mutex
         while (safeGetString(strTmp)) {
 
-            // verifica formato IO:xx-yy
-            if (strTmp.rfind("IO:", 0) != 0) {
-                std::cerr << "Bad or missing IO operation in line: " << line << std::endl;
+            // verifica se esta nos formatos aceitos
+            if (
+                strTmp.rfind("IO:", 0) == std::string::npos && 
+                strTmp.rfind("ML", 0) == std::string::npos &&
+                strTmp.rfind("MU", 0) == std::string::npos
+            ) {
+                std::cerr << "Malformed I/O operation or mutex in: "
+                        << strTmp << " at line: " << line << std::endl;
+                delete task;
                 continue;
             }
 
-            // remove o prefixo "IO:"
-            std::string data = strTmp.substr(3); // agora deve ser "xx-yy"
+            // FORMATO I/O (IO:xx-yy)
+            if (strTmp.rfind("IO:", 0) != std::string::npos) {
 
-            // encontra o separador '-'
-            size_t sep = data.find('-');
-            if (sep == std::string::npos) {
-                std::cerr << "Malformed IO operation in line: " << line << std::endl;
-                continue;
+                std::string data = strTmp.substr(3); // agora é "xx-yy"
+
+                size_t sep = data.find('-');
+                if (sep == std::string::npos) {
+                    std::cerr << "Malformed IO operation in line: " << line << std::endl;
+                    delete task;
+                    continue;
+                }
+
+                std::pair<unsigned int, unsigned int> IO;
+
+                try {
+                    IO.first = std::stoi(data.substr(0, sep));
+                } catch (...) {
+                    std::cerr << "Bad IO initial time in line: " << line << std::endl;
+                    delete task;
+                    continue;
+                }
+
+                try {
+                    IO.second = std::stoi(data.substr(sep + 1));
+                } catch (...) {
+                    std::cerr << "Bad IO duration time in line: " << line << std::endl;
+                    delete task;
+                    continue;
+                }
+
+                if (!task->addIO_operation(IO)) {
+                    std::cerr << "The IO operation in line: " << line
+                            << " cannot be inserted." << std::endl;
+                    delete task;
+                    continue;
+                }
             }
 
-            std::pair<unsigned int, unsigned int> IO;
+            // FORMATO ML (MLxx:yy)
+            else if (strTmp.rfind("ML", 0) == 0) {
 
-            // captura tempo inicial
-            try {
-                IO.first = std::stoi(data.substr(0, sep));
-            } catch (...) {
-                std::cerr << "Bad IO initial time in line: " << line << std::endl;
-                continue;
+                std::string data = strTmp.substr(2); // vira "xx:yy"
+
+                size_t sep = data.find(':');
+                if (sep == std::string::npos) {
+                    std::cerr << "Malformed mutex lock in line: " << line << std::endl;
+                    delete task;
+                    continue;
+                }
+
+                MutexAction action;
+                action.setType(MutexAction::Type::Lock);
+
+                try {
+                    action.setId(std::stoi(data.substr(0, sep)));
+                } catch (...) {
+                    std::cerr << "Bad mutex ID (ML) in line: " << line << std::endl;
+                    delete task;
+                    continue;
+                }
+
+                try {
+                    action.setTime(std::stoi(data.substr(sep + 1)));
+                } catch (...) {
+                    std::cerr << "Bad mutex time (ML) in line: " << line << std::endl;
+                    delete task;
+                    continue;
+                }
+
+                task->addMutexAction(action);
             }
 
-            // captura duração
-            try {
-                IO.second = std::stoi(data.substr(sep + 1));
-            } catch (...) {
-                std::cerr << "Bad IO duration time in line: " << line << std::endl;
-                continue;
-            }
+            // FORMATO MU (MUxx:yy)
+            else if (strTmp.rfind("MU", 0) == 0) {
 
-            // salva os dados
-            if (!task->addIO_operation(IO)) {
-                std::cerr << "The IO operation in line: " << line << " cannot be inserted." << std::endl;
-                continue;
+                std::string data = strTmp.substr(2); // vira "xx:yy"
+
+                size_t sep = data.find(':');
+                if (sep == std::string::npos) {
+                    std::cerr << "Malformed mutex unlock in line: " << line << std::endl;
+                    delete task;
+                    continue;
+                }
+
+                MutexAction action;
+                action.setType(MutexAction::Type::Unlock);
+
+                try {
+                    action.setId(std::stoi(data.substr(0, sep)));
+                } catch (...) {
+                    std::cerr << "Bad mutex ID (MU) in line: " << line << std::endl;
+                    delete task;
+                    continue;
+                }
+
+                try {
+                    action.setTime(std::stoi(data.substr(sep + 1)));
+                } catch (...) {
+                    std::cerr << "Bad mutex time (MU) in line: " << line << std::endl;
+                    delete task;
+                    continue;
+                }
+
+                task->addMutexAction(action);
             }
+        }
+
+        // verifica se as configuracoes dos mutex da tarefa estao corretas
+        std::string err;
+        if (!task->validateMutexesAction(err)) {
+            std::cerr << "Error at task " << task->getId() << ": " << err << "\n";
+            delete task;
+            continue;
         }
 
         tasks.push_back(task);
@@ -703,6 +793,8 @@ void Simulator::generateImage()
     imageGenerator->generateImage();
 }
 
+// usado em createTask de Menu.h
+// converte o objeto local task para um objeto gravado no heap 
 void Simulator::addTask(TCB task)
 {
     TCB* t = new TCB();
@@ -834,6 +926,56 @@ const bool Simulator::updateTaskIO_Duration(const unsigned int& taskId, const un
     return tasks[i]->addIO_operation(std::pair<unsigned int, unsigned int>{initialTime, newDuration});
 }
 
+/*
+Requisitos:
+o taskId tem que existir em tasks
+*/
+void Simulator::updateTaskMutexesActionId(const unsigned int &taskId, const unsigned int &oldMutexActionId, const unsigned int &newMutexActionId)
+{
+    size_t tam = tasks.size();
+    size_t i;
+    for(i = 0; tasks[i]->getId() != taskId; i++);
+
+    std::vector<MutexAction> mutexesAction = tasks[i]->getMutexesAction();
+    tam = mutexesAction.size();
+    for(size_t j = 0; j < tam; j++)
+        if(mutexesAction[j].getId() == oldMutexActionId)
+            mutexesAction[j].setId(newMutexActionId);
+}
+
+/*
+Requisitos:
+o taskId tem que existir em tasks
+*/
+const bool Simulator::updateTaskMutexActionTime(const unsigned int &taskId, MutexAction *mutexAction, const unsigned int &newTime)
+{
+    size_t tam = tasks.size();
+    size_t i;
+    for(i = 0; tasks[i]->getId() != taskId; i++);
+
+    // aqui eh criado copias de alguns objetos para reaproveitar 
+    // o metodo validateMutexesAction de TCB
+
+    // cria uma copia da tarefa
+    TCB taskCopy = *(tasks[i]);
+
+    // cria uma copia de mutexAction
+    MutexAction mCopy = *mutexAction;
+
+    taskCopy.removeMutexAction(*mutexAction);
+    taskCopy.addMutexAction(mCopy);
+
+    std::string error; // pode retornar no futuro
+    if(!taskCopy.validateMutexesAction(error))
+        return false;
+
+    // se o validade retornou verdadeiro, 
+    // entao eh seguro modificar o valor do tempo em mutexAction
+    mutexAction->setTime(newTime);
+
+    return true;
+}
+
 void Simulator::setAlgorithmScheduler(int i)
 {
     if(scheduler == nullptr)
@@ -885,7 +1027,10 @@ void Simulator::setQuantum(unsigned int q)
 
 void Simulator::setAlpha(unsigned int a)
 {
-    extraInfo.setAlpha(a);
+    if(scheduler == nullptr)
+        scheduler = new Scheduler();
+
+    scheduler->setAlpha(a);
 }
 
 std::vector<TCB*> Simulator::getTasks() const
@@ -905,7 +1050,9 @@ unsigned int Simulator::getQuantum() const
 
 unsigned int Simulator::getAlpha() const
 {
-    return extraInfo.getAlpha();
+    if(scheduler == nullptr) return 0;
+
+    return scheduler->getAlpha();
 }
 
 double Simulator::calcTicksPerSecond()
@@ -982,18 +1129,20 @@ const bool Simulator::isThereAnIO_Operation()
     return false;
 }
 
-// timeNow em ticks
-const bool Simulator::canAnyTasksEnter(double timeNow, std::vector<unsigned int>& indexTasks)
+// verifica se alguma tarefa esta no estado novo e adiciona-o no escalonador
+// retorna true, se tem uma tarefa nova
+// retorna false, caso contrário
+const bool Simulator::checkNewTasks(const unsigned int &timeNow)
 {
     bool found = false;
 
     for (unsigned int i = 0; i < tasks.size(); i++)
     {
-        // só entra se nunca tiver sido adicionada ao escalonador
+        // soh entra se nunca tiver sido adicionada ao escalonador
         if (tasks[i]->getState() == TCB::State::New &&
             timeNow >= tasks[i]->getEntryTime())
         {
-            indexTasks.push_back(i);
+            scheduler->addTask(tasks[i]);
             found = true;
         }
     }

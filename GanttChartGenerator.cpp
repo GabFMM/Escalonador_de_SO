@@ -23,7 +23,7 @@ void GanttChartGenerator::createAxis(size_t numTasks, std::vector<unsigned int> 
     posAxisY.second = 50;
 
     // Calcula o eixo X em base de Y
-    unsigned int tamX = tamY * 4;
+    unsigned int tamX = tamY * 7;
     if(tamX > 1920)
         tamX = 1920;
     tamAxisX = tamX;
@@ -114,10 +114,13 @@ void GanttChartGenerator::addRectsTasks(const std::vector<unsigned int> &readyTa
 
         // Verifica qual eh o tipo da cor
         std::string color;
-        if(std::holds_alternative<int>(readyTasksColor[i]))
+        if(std::holds_alternative<int>(readyTasksColor[i])){
             color = toStrColor(std::get<int>(readyTasksColor[i]));
-        else if(std::holds_alternative<std::string>(readyTasksColor[i]))
-            color = std::get<std::string>(readyTasksColor[i]);
+        }
+        else if(std::holds_alternative<std::string>(readyTasksColor[i])){
+            // "arruma" para o formato em hexadecimal
+            color = "#" + std::get<std::string>(readyTasksColor[i]);
+        }
 
         // cria a tag clipPath (funcao: produz uma mascara na regiao)
         // usada para criar a borda interna
@@ -155,6 +158,7 @@ std::string GanttChartGenerator::toStrColor(const unsigned int &color)
 
 void GanttChartGenerator::generateImage()
 {
+    // ao usar essa construtora, ja apaga o conteudo do arquivo
     std::ofstream arquive("image.svg");
 
     if (!arquive.is_open()) {

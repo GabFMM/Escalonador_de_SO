@@ -86,6 +86,7 @@ What task information do you want change?
 4 -> Duration
 5 -> Priority
 6 -> IO operations
+7 -> Mutexes action
 
 Enter the desired option (number):
 )";
@@ -251,7 +252,7 @@ void Menu::createTaskScreen()
 
         // Ocorre na etapa de edicao de tarefas
         unsigned int standardId = numTasks;
-        while(simulator->existId(standardId))
+        while(simulator->existTaskId(standardId))
             standardId = simulator->modifyId(standardId);
 
         std::cout 
@@ -262,7 +263,8 @@ void Menu::createTaskScreen()
             << "Entry time: 1\n"
             << "Duration: 1\n"
             << "Priority: 1\n"
-            << "No I/O operations\n" <<
+            << "No I/O operations\n"
+            << "No mutex actions\n" <<
         std::endl;
 
         std::string res = checkEntryString(targets);
@@ -320,16 +322,16 @@ void Menu::createTaskScreen()
                 std::cout << "\nDo you want to add an IO operation? (Y or N)" << std::endl;
                 res = checkEntryString(std::vector<std::string>{"Y", "y", "N", "n"});
 
-                if(res == "N" || res == "n") continue;
+                if(res == "N" || res == "n") break;
 
                 unsigned int IO_InitialTime = 0;
                 unsigned int IO_duration = 0;
 
                 std::cout 
                     << "\nEnter the IO operation initial time (relative to task entry time):" 
-                    << "\nThe value cannot be bigger to task entry time."
+                    << "\nThe value cannot be bigger to task duration."
                     << std::endl;
-                IO_InitialTime = checkEntryNumber((unsigned int)0, (unsigned int)task.getEntryTime());
+                IO_InitialTime = checkEntryNumber((unsigned int)0, (unsigned int)task.getDuration());
 
                 std::cout 
                     << "\nEnter the IO operation duration time:"
@@ -343,6 +345,55 @@ void Menu::createTaskScreen()
                         << std::endl;
                     std::cin.get();
                 }
+            }
+
+            // mutex action
+            // para cada resposta positiva pelo usuario
+            // eh criado dois mutex action (para impedir inconsistencias)
+            // no preExecuteDefault, de simulator.h, eh criado os objetos Mutex
+            res = "Y";
+            while(res == "Y" || res == "y"){
+                std::cout << "\nDo you want to add an mutex for the task? (Y or N)" << std::endl;
+                res = checkEntryString(std::vector<std::string>{"Y", "y", "N", "n"});
+
+                if(res == "N" || res == "n") break;
+
+                MutexAction mutexActionLock, mutexActionUnlock;
+
+                // tipo
+                mutexActionLock.setType(MutexAction::Type::Lock);
+                mutexActionUnlock.setType(MutexAction::Type::Unlock);
+
+                // ID
+                std::cout << "\nEnter the mutex ID:" << std::endl;
+                unsigned int mutexActionId = checkEntryNumber((unsigned int)0, std::numeric_limits<unsigned int>::max());
+
+                mutexActionLock.setId(mutexActionId);
+                mutexActionUnlock.setId(mutexActionId);
+
+                // tempo
+                std::cout << "\nEnter the mutex initial time (relative to task):" << std::endl;
+                mutexActionLock.setTime(checkEntryNumber((unsigned int)0, task.getDuration()));
+
+                std::cout << "\nEnter the mutex end time (relative to task):" << std::endl;
+                mutexActionUnlock.setTime(checkEntryNumber((unsigned int)mutexActionLock.getTime() + 1, task.getDuration()));
+
+                // verifica casos como ML01:02 MU01:04 ML01:00 MU01:04
+                if (!task.canAddMutexesAction(mutexActionId,
+                            mutexActionLock.getTime(),
+                            mutexActionUnlock.getTime()))
+                {
+                    std::cout << "\nERROR: Invalid mutex action sequence for mutex ID "
+                            << mutexActionId << ".\n";
+                    std::cout << "This may be caused by:\n"
+                            << "- Unlock before lock\n"
+                            << "- Lock before previous unlock\n"
+                            << "- Overlapping intervals\n";
+                    continue; // não adiciona
+                }
+                                
+                task.addMutexAction(mutexActionLock);
+                task.addMutexAction(mutexActionUnlock);
             }
 
             numTasks++;
@@ -409,7 +460,7 @@ void Menu::createEditScreen()
         std::cout << "Enter the ID of the task to be edited:" << std::endl;
         unsigned int idTask = checkEntryNumber((unsigned int)0, std::numeric_limits<unsigned int>::max());
 
-        while(!simulator->existId(idTask)){
+        while(!simulator->existTaskId(idTask)){
             std::cout << "\nThe ID " << idTask << " does not match an existing ID task." << std::endl;
             std::cout << "Try again.\n" << std::endl;
 
@@ -418,32 +469,13 @@ void Menu::createEditScreen()
 
         clearTerminal();
 
-        std::cout << "Task informations:\n" << std::endl;
-
         int i;
         for(i = 0; tasks[i]->getId() != idTask; i++);
-        // Verifica o tipo da cor
-        if(tasks[i]->getColor() != 0){
-            std::cout << 
-                "ID: " << tasks[i]->getId() << "\n" <<
-                "Color: " << tasks[i]->getColor() << "\n" <<
-                "Entry time: " << tasks[i]->getEntryTime() << "\n" <<
-                "Duration: " << tasks[i]->getDuration() << "\n" <<
-                "Priority: " << tasks[i]->getStaticPriority() << "\n" <<
-            std::endl;
-        }
-        else{
-            std::cout << 
-                "ID: " << tasks[i]->getId() << "\n" <<
-                "Color: " << tasks[i]->getStrColor() << "\n" <<
-                "Entry time: " << tasks[i]->getEntryTime() << "\n" <<
-                "Duration: " << tasks[i]->getDuration() << "\n" <<
-                "Priority: " << tasks[i]->getStaticPriority() << "\n" <<
-            std::endl;
-        }
+        
+        showTask(tasks[i]);
 
         std::cout << editTaskText << std::endl;
-        option = checkEntryNumber((unsigned int)1, (unsigned int)6);
+        option = checkEntryNumber((unsigned int)1, (unsigned int)7);
 
         clearTerminal();
 
@@ -454,7 +486,7 @@ void Menu::createEditScreen()
             
             unsigned int newId = checkEntryNumber((unsigned int)0, std::numeric_limits<unsigned int>::max());
 
-            while(simulator->existId(newId)){
+            while(simulator->existTaskId(newId)){
                 std::cout << "The ID " << newId << " already exists." << std::endl;
                 std::cout << "Try again.\n" << std::endl;
 
@@ -580,6 +612,115 @@ void Menu::createEditScreen()
                     std::endl;
 
                     std::cin.get();
+                }
+            }
+        }
+        // altera um mutex
+        else if(option == 7){
+            std::vector<MutexAction> mutexesAction = tasks[i]->getMutexesAction();
+
+            // verifica se ha mutex action para a tarefa
+            if(!mutexesAction.size()){
+                std::cout << 
+                    "There isn't mutex actions for this task.\n" <<
+                    "Press any key to continue.\n" <<
+                std::endl;
+
+                std::cin.get();
+            }
+
+            // le qual mutex id mudar
+            
+            std::cout << 
+                "What mutex action do you want change?\n" <<
+                "Enter the value of mutex ID.\n" <<
+            std::endl;
+
+            unsigned int mutexActionId = checkEntryNumber((unsigned int)0, std::numeric_limits<unsigned int>::max());
+
+            // verifica se o id inserido nao existe
+            while(!tasks[i]->existMutexActionId(mutexActionId)){
+                std::cout << 
+                    "The ID " << mutexActionId << " does not exist.\n" <<
+                    "Enter again the value of mutex ID.\n" <<
+                std::endl;
+
+                mutexActionId = checkEntryNumber((unsigned int)0, std::numeric_limits<unsigned int>::max());
+            }
+
+            // escolhe o que mudar (id ou tempo)
+            std::cout <<
+                "Choose an option to edit:\n\n"
+                "1 -> Mutex ID (it'll update all mutex action with the same ID);\n" <<
+                "2 -> Mutex time;\n" << 
+            std::endl;
+
+            int n = checkEntryNumber((unsigned int)1, (unsigned int)2);
+
+            // muda o id do mutex action
+            if(n == 1){
+                std::cout <<
+                    "Previous value: " << mutexActionId << "\n" <<
+                    "What is the new ID?\n" <<
+                std::endl;
+
+                unsigned int newMutexActionId = checkEntryNumber((unsigned int)0, std::numeric_limits<unsigned int>::max());
+
+                // verifica se o id inserido existe
+                while(tasks[i]->existMutexActionId(newMutexActionId)){
+                    std::cout << 
+                        "The ID " << newMutexActionId << " already exists.\n" <<
+                        "Enter again the value of mutex ID.\n" <<
+                    std::endl;
+
+                    newMutexActionId = checkEntryNumber((unsigned int)0, std::numeric_limits<unsigned int>::max());
+                }   
+
+                simulator->updateTaskMutexesActionId(tasks[i]->getId(), mutexActionId, newMutexActionId);
+            }
+            // muda o tempo do mutex action
+            else if(n == 2){
+                std::cout << "Enter the number of the mutex action to be update.\n" << std::endl;
+
+                // mostra os mutexes
+                std::vector<MutexAction> v = tasks[i]->getMutexesAction(mutexActionId);
+                size_t vTam = v.size();
+                for(size_t j = 0; j < vTam; j++){
+                    std::cout << j + 1 << " -> mutex ";
+                    
+                    // verifica o tipo
+                    if(v[j].getType() == MutexAction::Type::Lock)
+                        std::cout << "lock, ";
+                    else if(v[j].getType() == MutexAction::Type::Unlock)
+                        std::cout << "unlock, ";
+                    
+                    std::cout << "time: " << v[j].getTime() << std::endl;
+                }
+
+                unsigned int posMutexAction = checkEntryNumber((unsigned int)0, (unsigned int)vTam);
+
+                std::cout <<
+                    "Previous value: " << v[posMutexAction - 1].getTime() << "\n" <<
+                    "What is the new time?\n" <<
+                std::endl;
+
+                unsigned int newTime = checkEntryNumber((unsigned int)0, (unsigned int)tasks[i]->getDuration());
+
+                if(!simulator->updateTaskMutexActionTime(tasks[i]->getId(), &(v[posMutexAction - 1]), newTime)){
+                    std::cout << 
+                        "This change cannot happen.\n" <<
+                        "Press any key to continue.\n" <<
+                    std::endl;
+
+                    std::cin.get();
+                }
+                else{
+                    // "atualiza" o mutexAction
+                    
+                    tasks[i]->removeMutexAction(v[posMutexAction - 1]);
+
+                    v[posMutexAction - 1].setTime(newTime);
+                    tasks[i]->addMutexAction(v[posMutexAction - 1]);
                 }
             }
         }
@@ -728,12 +869,30 @@ void Menu::showTasks(const std::vector<TCB*>& t)
 
         // Mostra as operacoes I/O
         std::vector<IO_Operation> ops = t[i]->getIO_operations();
-        size_t tam = ops.size();
-        for(size_t j = 0; j < tam; j++){
+        size_t opsTam = ops.size();
+        for(size_t j = 0; j < opsTam; j++){
             std::cout <<
                 "I/O initial time: " << ops[j].getInitialTime() << "\n" <<
                 "I/O duration: " << ops[j].getDuration() << "\n" <<
                 "I/O remainig time: " << ops[j].getRemainingTime() << "\n" <<
+            std::endl;
+        }
+
+        // Mostra os mutexes action
+        std::vector<MutexAction> mutexesAction = t[i]->getMutexesAction();
+        size_t mutexesActionTam = mutexesAction.size();
+        for(size_t j = 0; j < mutexesActionTam; j++){
+            // verifica o tipo
+            std::string type;
+            if(mutexesAction[j].getType() == MutexAction::Type::Lock)
+                type = "lock";
+            else if(mutexesAction[j].getType() == MutexAction::Type::Unlock)
+                type = "unlock";
+
+            std::cout <<
+                "Mutex type: " << type << "\n" <<
+                "Mutex ID: " << mutexesAction[j].getId() << "\n" <<
+                "Mutex time: " << mutexesAction[j].getTime() << "\n" <<
             std::endl;
         }
 
@@ -743,4 +902,64 @@ void Menu::showTasks(const std::vector<TCB*>& t)
 
         std::cout << std::endl;
     }
+}
+
+void Menu::showTask(const TCB *t)
+{
+    std::cout << "Task information:\n" << std::endl;
+
+    // Verifica o tipo da cor
+    if(t->getColor() != 0){
+        std::cout << 
+            "ID: " << t->getId() << "\n" <<
+            "Color: " << t->getColor() << "\n" <<
+            "Entry time: " << t->getEntryTime() << "\n" <<
+            "Duration: " << t->getDuration() << "\n" <<
+            "Remainig time: : " << t->getRemainingTime() << "\n" <<
+            "Static priority: " << t->getStaticPriority() << "\n" <<
+            "Dynamic priority: " << t->getDynamicPriority() << "\n";
+    }
+    else{
+        std::cout << 
+            "ID: " << t->getId() << "\n" <<
+            "Color: " << t->getStrColor() << "\n" <<
+            "Entry time: " << t->getEntryTime() << "\n" <<
+            "Duration: " << t->getDuration() << "\n" <<
+            "Remainig time: : " << t->getRemainingTime() << "\n" <<
+            "Static priority: " << t->getStaticPriority() << "\n"
+            "Dynamic priority: " << t->getDynamicPriority() << "\n";
+    }
+
+    // Mostra as operacoes I/O
+    std::vector<IO_Operation> ops = t->getIO_operations();
+    size_t opsTam = ops.size();
+    for(size_t j = 0; j < opsTam; j++){
+        std::cout <<
+            "I/O initial time: " << ops[j].getInitialTime() << "\n" <<
+            "I/O duration: " << ops[j].getDuration() << "\n" <<
+            "I/O remainig time: " << ops[j].getRemainingTime() << "\n";
+    }
+
+    // Mostra os mutexes action
+    std::vector<MutexAction> mutexesAction = t->getMutexesAction();
+    size_t mutexesActionTam = mutexesAction.size();
+    for(size_t j = 0; j < mutexesActionTam; j++){
+        // verifica o tipo
+        std::string type;
+        if(mutexesAction[j].getType() == MutexAction::Type::Lock)
+            type = "lock";
+        else if(mutexesAction[j].getType() == MutexAction::Type::Unlock)
+            type = "unlock";
+
+        std::cout <<
+            "Mutex type: " << type << "\n" <<
+            "Mutex ID: " << mutexesAction[j].getId() << "\n" <<
+            "Mutex time: " << mutexesAction[j].getTime() << "\n";
+    }
+
+    // Verifica se a tarefa acabou
+    if(t->getEndTime() != std::numeric_limits<unsigned int>::max())
+        std::cout << "End time: " << t->getEndTime() << "\n";
+
+    std::cout << std::endl;
 }

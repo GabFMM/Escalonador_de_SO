@@ -1,11 +1,15 @@
 #include "IO_Handler.h"
 
-IO_Handler::IO_Handler() : suspendedTasks(0)
+IO_Handler::IO_Handler(Scheduler* s) :
+scheduler(s),
+suspendedTasks(0)
 {
 }
 
 IO_Handler::~IO_Handler()
 {
+    // a destruicao de scheduler fica por conta de Simulator
+    scheduler = nullptr; 
     suspendedTasks.clear();
 }
 
@@ -14,14 +18,27 @@ std::vector<TCB *> IO_Handler::getSuspendedTasks() const
     return suspendedTasks;
 }
 
-void IO_Handler::addSuspendedTask(TCB *task)
+// adiciona a tarefa na fila de suspensas
+void IO_Handler::addTask(TCB *task)
 {
-    if(task != nullptr)
+    if(task != nullptr){
+        task->setState(TCB::State::Suspended);
         suspendedTasks.push_back(task);
+    }
 }
 
-void IO_Handler::updateSuspendedTasks(const unsigned int &deltaTime)
+/*
+    metodo responsavel por atualizar as operacoes I/O de cada tarefa
+    se o I/O acabar, a tarefa dona eh removida da fila de espera
+    e eh inserida na fila de prontas do escalonador
+
+    retorna true, se a tarefa for adicionada no escalonador
+    retorna false, caso contrario
+*/
+const bool IO_Handler::updateSuspendedTasks(const unsigned int &deltaTime)
 {
+    bool exit = false;
+
     auto it = suspendedTasks.begin();
 
     while (it != suspendedTasks.end()) {
@@ -41,16 +58,21 @@ void IO_Handler::updateSuspendedTasks(const unsigned int &deltaTime)
 
         if (op.getRemainingTime() <= 0) {
 
-            tcb->setState(TCB::State::New);
+            // adiciona a tarefa na fila de prontas do escalonador
+            scheduler->addTask(tcb);
+            exit = true;
 
             tcb->removeIO_operation(initialTime);
 
+            // remove a tarefa na fila de suspensas do I/O
             it = suspendedTasks.erase(it); // move o iterador
         }
         else {
-            ++it;
+            it++;
         }
     }
+
+    return exit;
 }
 
 std::vector<unsigned int> IO_Handler::getSuspendedTasksId() const
@@ -78,7 +100,14 @@ std::vector<std::variant<int, std::string>> IO_Handler::getSuspendedTasksColor()
     return colors;
 }
 
-const bool IO_Handler::canAnyIO_OperationBegin(const TCB *currentTask)
+/*
+    metodo responsavel por verificar se alguma operacao I/O pode ocorrer na tarefa executada
+    caso positivo, a tarefa eh incluida na fila de suspensas
+
+    retorna true, se a tarefa entrou na fila de suspensas
+    retorna false, caso contrario
+*/
+const bool IO_Handler::canAnyIO_OperationBegin(TCB *currentTask)
 {
     std::vector<IO_Operation> ops = currentTask->getIO_operations();
     size_t tam = ops.size();
@@ -89,9 +118,16 @@ const bool IO_Handler::canAnyIO_OperationBegin(const TCB *currentTask)
 
     // as operacoes estao ordenadas por tempo
     // entao nao vai ser tao custoso essa procura
-    for(size_t i = 0; i < tam; i++)
-        if(ops[i].getInitialTime() == taskExecutedTime)
+    for(size_t i = 0; i < tam; i++){
+        if(ops[i].getInitialTime() == taskExecutedTime){
+            // remove a tarefa na fila de prontas do escalonador
+            scheduler->removeTask(currentTask->getId());
+
+            // insere a tarefa na fila de espera do I/O
+            addTask(currentTask);
             return true;
-    
+        }
+    }
+
     return false;
 }

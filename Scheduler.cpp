@@ -1,17 +1,35 @@
 #include "Scheduler.h"
 
-Scheduler::Scheduler()
+Scheduler::Scheduler() : 
+readyTasks(),
+alpha(0)
 {
 }
 
 Scheduler::~Scheduler()
 {
     readyTasks.clear();
+    alpha = 0;
 }
 
 void Scheduler::setAlgorithm(Algorithm algo)
 {
     algorithmChosen = algo;
+}
+
+void Scheduler::setAlpha(unsigned int a)
+{
+    alpha = a;
+}
+
+Scheduler::Algorithm Scheduler::getAlgorithm() const
+{
+    return algorithmChosen;
+}
+
+unsigned int Scheduler::getAlpha() const
+{
+    return alpha;
 }
 
 void Scheduler::setTasks(std::vector<TCB*> t)
@@ -37,84 +55,69 @@ std::vector<unsigned int> Scheduler::getIdTasks()
 
 std::vector<unsigned int> Scheduler::getReadyTasksId()
 {
-    // verifica se tem tarefa "executada"
-    if(!readyTasks.size()) 
-        return std::vector<unsigned int>(0);
-
-    // -1, pois a primeira eh sempre a tarefa "executada"
-    std::vector<unsigned int> v(readyTasks.size() - 1); 
+    std::vector<unsigned int> v(readyTasks.size()); 
 
     size_t tam = v.size();
     for(size_t i = 0; i < tam; i++)
-        v[i] = readyTasks[i + 1]->getId();
+        v[i] = readyTasks[i]->getId();
 
     return v;
 }
 
-// -1, pois a primeira eh sempre a tarefa "executada"
 std::vector<std::variant<int, std::string>> Scheduler::getReadyTasksColor()
 {
-    // verifica se tem tarefa "executada"
-    if(!readyTasks.size()) 
-        return std::vector<std::variant<int, std::string>>(0);
 
     // o variant pode assumir um dos dois tipos, a depender de qual foi armazenado
-    // -1, pois a primeira eh sempre a tarefa "executada"
-    std::vector<std::variant<int, std::string>> v(readyTasks.size() - 1);
+    std::vector<std::variant<int, std::string>> v(readyTasks.size());
 
     size_t tam = v.size();
     for(size_t i = 0; i < tam; i++)
-        if(readyTasks[i + 1]->getColor() != 0)
-            v[i] = std::variant<int, std::string>{readyTasks[i + 1]->getColor()};
+        if(readyTasks[i]->getColor() != 0)
+            v[i] = std::variant<int, std::string>{readyTasks[i]->getColor()};
         else
-            v[i] = std::variant<int, std::string>{readyTasks[i + 1]->getStrColor()};
+            v[i] = std::variant<int, std::string>{readyTasks[i]->getStrColor()};
 
     return v;
 }
 
-void Scheduler::addTask(TCB* task, const unsigned int& alpha)
+void Scheduler::addTask(TCB* task)
 {
-    if (task->getState() != TCB::State::New) return;
+    if (task->getState() == TCB::State::Finished) return;
 
+    // atualiza o estado da tarefa para pronta
     task->setState(TCB::State::Ready);
 
-    switch (algorithmChosen)
-    {
-    case Algorithm::FIFO:
-        // Sem necessidade de ordenacao, pois no simulator ja vem ordenado por ordem de chegada
-        readyTasks.push_back(task);
-        break;
-    
-    case Algorithm::SRTF:
-        readyTasks.push_back(task);
-        // Ordena por menor tempo restante
-        std::sort(readyTasks.begin(), readyTasks.end(), [](const TCB* a, const TCB* b){return a->getRemainingTime() < b->getRemainingTime();});
-        break;
-    
-    case Algorithm::PRIOp:
-        readyTasks.push_back(task);
-        // Ordena por maior prioridade estatica
-        std::sort(readyTasks.begin(), readyTasks.end(), [](const TCB* a, const TCB* b){return a->getStaticPriority() > b->getStaticPriority();});
-        break;
-    
-    case Algorithm::PRIOPEnv:
-        updateDynamicPriorityTasks(alpha);
+    // adiciona a tarefa no fim da fila
+    readyTasks.push_back(task);
 
-        readyTasks.push_back(task);
+    // reordena a fila de prontas
+    sortReadyTasks();
+}
 
-        // Ordena por maior prioridade dinamica
-        std::sort(readyTasks.begin(), readyTasks.end(), [](const TCB* a, const TCB* b){return a->getDynamicPriority() > b->getDynamicPriority();});
-        break;
-    }
+void Scheduler::addExecutedTask(TCB *task)
+{
+    if (task->getState() != TCB::State::Running ) return;
+
+    // atualiza o estado da tarefa para pronta
+    task->setState(TCB::State::Ready);
+
+    // adiciona a tarefa no inicio da fila
+    readyTasks.insert(readyTasks.begin(), task);
+
+    // reordena a fila de prontas
+    sortReadyTasks();
 }
 
 // Apenas apaga o ponteiro que aponta para TCB que possui o idTask
 void Scheduler::removeTask(unsigned int idTask)
 {
     std::vector<TCB*>::iterator it;
-    for(it = readyTasks.begin(); (*it)->getId() != idTask; it++);
-    
-    readyTasks.erase(it);
+    for(it = readyTasks.begin(); it != readyTasks.end(); it++){
+        if((*it)->getId() == idTask){
+            readyTasks.erase(it);
+            return;
+        }
+    }
 }
 
 const bool Scheduler::existTask() const
@@ -122,22 +125,35 @@ const bool Scheduler::existTask() const
     return readyTasks.size();
 }
 
-// Ocorre quando a tarefa "executada" tem o seu quantum zerado
-// Esse metodo deve ser chamado no executeDefault
-void Scheduler::taskQuantumEnded()
+void Scheduler::taskQuantumEnded(const unsigned int& quantum)
 {
-    // Coloca a tarefa "executada" no final do vetor
-    TCB* aux = readyTasks[0];
-    readyTasks.erase(std::vector<TCB*>::const_iterator(readyTasks.begin()));
-    readyTasks.push_back(aux);
+    // caso especial do RR
+    if(algorithmChosen == Algorithm::FIFO && quantum > 0){
+        // rotaciona a fila
+        if (!readyTasks.empty()) {
+            // move o primeiro elemento para o final
+            TCB* first = readyTasks.front();
+            readyTasks.erase(readyTasks.begin());
+            readyTasks.push_back(first);
+        }
+    }
+}
 
-    // Reordena o vetor conforme o algoritmo
+void Scheduler::updateDynamicPriorityTasks()
+{
+    size_t tam = readyTasks.size();
+    for(size_t i = 0; i < tam; i++)
+        readyTasks[i]->setDynamicPriority(readyTasks[i]->getDynamicPriority() + alpha);
+}
+
+void Scheduler::sortReadyTasks()
+{
     switch (algorithmChosen)
     {
     case Algorithm::FIFO:
-
+        // sem ordenacao, pois a logica eh seguir uma fila
         break;
-        
+    
     case Algorithm::SRTF:
         // Ordena por menor tempo restante
         std::sort(readyTasks.begin(), readyTasks.end(), [](const TCB* a, const TCB* b){return a->getRemainingTime() < b->getRemainingTime();});
@@ -149,27 +165,29 @@ void Scheduler::taskQuantumEnded()
         break;
     
     case Algorithm::PRIOPEnv:
+        updateDynamicPriorityTasks();
+
         // Ordena por maior prioridade dinamica
         std::sort(readyTasks.begin(), readyTasks.end(), [](const TCB* a, const TCB* b){return a->getDynamicPriority() > b->getDynamicPriority();});
         break;
     }
 }
 
-void Scheduler::updateDynamicPriorityTasks(unsigned int alpha)
-{
-    size_t tam = readyTasks.size();
-    // pula a primeira tarefa, pois ela eh a tarefa "executada"
-    // tarefas "executadas" nao tem prioridade dinamica atualizada
-    for(size_t i = 1; i < tam; i++)
-        readyTasks[i]->setDynamicPriority(readyTasks[i]->getDynamicPriority() + alpha);
-}
-
 TCB* Scheduler::getNextTask()
 {
     if(readyTasks.empty()) return nullptr;
     
-    // arruma prioridade dinamica
-    readyTasks[0]->setDynamicPriority(readyTasks[0]->getStaticPriority());
+    // a primeira tarefa na fila de prontas sera a nova tarefa "executada"
+    TCB* executedTask = readyTasks[0];
 
-    return readyTasks[0];
+    // atualiza o estado da tarefa "executada"
+    executedTask->setState(TCB::State::Running);
+
+    // remove a tarefa executada da fila de prontas
+    removeTask(executedTask->getId());
+
+    // arruma prioridade dinamica da tarefa executada
+    executedTask->setDynamicPriority(executedTask->getStaticPriority());
+
+    return executedTask;
 }

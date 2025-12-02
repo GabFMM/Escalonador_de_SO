@@ -52,4 +52,5 @@ public:
     void clearTerminal();
     void setSimulator(Simulator* s);
     void showTasks(const std::vector<TCB*>& t);
+    void showTask(const TCB* t);
 };

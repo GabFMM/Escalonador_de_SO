@@ -15,12 +15,16 @@ private:
     std::vector<TCB*> readyTasks;
 
     Algorithm algorithmChosen;
+    unsigned int alpha; // usado no PRIOPEnv
 
 public:
     Scheduler();
     ~Scheduler();
 
     void setAlgorithm(Algorithm algo);
+    void setAlpha(unsigned int a);
+    Algorithm getAlgorithm() const;
+    unsigned int getAlpha() const;
 
     // manipulacao de readyTasks
 
@@ -33,9 +37,11 @@ public:
     // setters
     void setTasks(std::vector<TCB*> t);
 
-    void addTask(TCB* task, const unsigned int& alpha = 0);
+    void addTask(TCB* task);
+    void addExecutedTask(TCB* task);
     void removeTask(unsigned int idTask);
     const bool existTask() const;
-    void taskQuantumEnded();
-    void updateDynamicPriorityTasks(unsigned int alpha);
+    void taskQuantumEnded(const unsigned int& quantum);
+    void updateDynamicPriorityTasks();
+    void sortReadyTasks();
 };

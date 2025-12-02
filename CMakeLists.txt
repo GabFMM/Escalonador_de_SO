@@ -13,7 +13,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 # Subsequent arguments are the source files for the executable
 add_executable(Scheduler.exe 
 	main.cpp
-        ExtraInfo.cpp
+    ExtraInfo.cpp
 	ExtraInfo.h
 	GanttChartGenerator.cpp
 	GanttChartGenerator.h
@@ -29,6 +29,12 @@ add_executable(Scheduler.exe
 	IO_operation.h
 	IO_Handler.cpp
 	IO_Handler.h
+	Mutex.cpp
+	Mutex.h
+	MutexAction.cpp
+	MutexAction.h
+	MutexHandler.cpp
+	MutexHandler.h
 )
 
 # Build type padrão: Debug

@@ -13,6 +13,8 @@
 #include "ExtraInfo.h"
 #include "IO_Operation.h"
 #include "IO_Handler.h"
+#include "MutexAction.h"
+#include "MutexHandler.h"
 
 class Menu;
 
@@ -22,6 +24,7 @@ private:
     Menu* menu;
     Scheduler* scheduler;
     IO_Handler* io_handler;
+    MutexHandler* mutexHandler;
     GanttChartGenerator* imageGenerator;
     ExtraInfo extraInfo;
 
@@ -52,6 +55,8 @@ public:
     void updateTaskStaticPriority(const unsigned int& idTask, const unsigned int& newPriority);
     const bool updateTaskIO_InitialTime(const unsigned int& taskId, const unsigned int& oldInitialTime, const unsigned int& newInitialTime);
     const bool updateTaskIO_Duration(const unsigned int& taskId, const unsigned int& initialTime, const unsigned int& newDuration);
+    void updateTaskMutexesActionId(const unsigned int& taskId, const unsigned int& oldMutexActionId, const unsigned int& newMutexActionId);
+    const bool updateTaskMutexActionTime(const unsigned int& taskId, MutexAction* mutexAction, const unsigned int& newTime);
 
     // setters e getters
     void setAlgorithmScheduler(int i); // Usado por Menu.cpp
@@ -68,14 +73,14 @@ public:
     unsigned int getMaxEntryTime();
     const bool isThereAnIO_Operation();
 
-    const bool canAnyTasksEnter(double timeNow, std::vector<unsigned int>& indexTasks);
+    const bool checkNewTasks(const unsigned int& timeNow);
     const bool IsThereAnUnfinishedTask();
 
     // usado no loadArquive
     void trim(std::string &s);
     void remove_cr(std::string &s);
 
-    const bool existId(unsigned int id);
+    const bool existTaskId(unsigned int id);
     unsigned int modifyId(unsigned int id);
 
     // Debugger

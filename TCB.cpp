@@ -121,9 +121,163 @@ void TCB::removeIO_operation(const unsigned int &initialTime)
 // Para funcionar, para cada operacao I/O, tem que ter um unico tempo inicial
 void TCB::setIO_OperationRemainingTime(const unsigned int &initialTime, const long long &newRemainingTime)
 {
-    for(auto &op : IO_operations)
-        if(op.getInitialTime() == initialTime)
+    for(auto &op : IO_operations){
+        if(op.getInitialTime() == initialTime){
             op.setRemainingTime(newRemainingTime);
+            return;
+        }
+    }
+}
+
+std::vector<MutexAction> TCB::getMutexesAction() const
+{
+    return mutexesAction;
+}
+
+// retorna os mutexes action com o mesmo id passado por parametro
+std::vector<MutexAction> TCB::getMutexesAction(unsigned int id) const
+{
+    std::vector<MutexAction> v;
+
+    size_t tam = mutexesAction.size();
+    for(size_t i = 0; i < tam; i++)
+        if(mutexesAction[i].getId() == id)
+            v.push_back(mutexesAction[i]);
+
+    return v;
+}
+
+std::vector<unsigned int> TCB::getMutexesActionId() const
+{
+    std::vector<unsigned int> v(mutexesAction.size(), 0);
+
+    size_t tam = mutexesAction.size();
+    for(size_t i = 0; i < tam; i++)
+        v[i] = mutexesAction[i].getId();
+
+    return v;
+}
+
+void TCB::addMutexAction(MutexAction m)
+{
+    mutexesAction.push_back(m);
+}
+
+// o m tem que existir na tarefa
+void TCB::removeMutexAction(MutexAction m)
+{
+    std::vector<MutexAction>::iterator it;
+    for(it = mutexesAction.begin(); (*it) != m; it++);
+
+    mutexesAction.erase(it);
+}
+
+// usado em loadArquive de simulator.h
+// caso retorne falso, a tarefa será apagada em loadArquive
+const bool TCB::validateMutexesAction(std::string &error)
+{
+    // ordena por tempo os mutexesAction
+    // util para verificar se nao houve um mutex unlock antes de um lock
+    // util para organizar a ordem de leitura do arquivo de configuracao
+    std::sort(mutexesAction.begin(), mutexesAction.end(),
+          [](const MutexAction& a, const MutexAction& b){
+              return a.getTime() < b.getTime();
+          });
+
+    // tabela hash dos id's dos mutexes do tipo lock
+    std::unordered_set<unsigned int> held;
+
+    for (const auto &act : mutexesAction) {
+
+        // se o mutexAction for do tipo Lock
+        if (act.getType() == MutexAction::Type::Lock) {
+            // verifica se nao ha dois mutexes lock com o mesmo id
+            if (held.count(act.getId())) {
+                error = "Mutex " + std::to_string(act.getId()) +
+                        " required twice without being released.";
+                return false;
+            }
+
+            // insere o id do mutex lock na tabela hash
+            held.insert(act.getId());
+        }
+
+        // se o mutexAction for do tipo Unlock
+        else if (act.getType() == MutexAction::Type::Unlock) {
+            // verifica se o mutexAction do tipo Unlock ocorre 
+            // sem um mutexAction correspondente (mesmo id) do tipo Lock
+            if (!held.count(act.getId())) {
+                error = "Mutex " + std::to_string(act.getId()) +
+                        " released without being purchased.";
+                return false;
+            }
+
+            // remove o id do mutex lock na tabela hash
+            held.erase(act.getId());
+        }
+    }
+
+    // verifica se algum mutex do tipo Lock nao foi liberado
+    // isto eh, nao tem um mutex do tipo Unlock com o mesmo id
+    if (!held.empty()) {
+        error = "Task ended with unreleased mutexes.";
+        return false;
+    }
+
+    return true;
+}
+
+const bool TCB::canAddMutexesAction(unsigned int id, unsigned int lockTime, unsigned int unlockTime)
+{
+    bool locked = false;       // indica se o mutex esta atualmente bloqueado
+    unsigned int lastTime = 0; // tempo da última ação deste mutex action ID
+
+    for (const auto &act : mutexesAction)
+    {
+        if (act.getId() != id)
+            continue;
+
+        // Ações devem ser avaliadas por ordem cronológica
+        if (act.getTime() < lastTime)
+            lastTime = act.getTime();
+
+        if (act.getType() == MutexAction::Type::Lock)
+        {
+            if (locked)
+                return false; // dois locks seguidos
+            locked = true;
+
+            // novo lock não pode vir depois de um MU com tempo menor
+            if (lockTime < act.getTime() && locked)
+                return false;
+        }
+        else // Unlock
+        {
+            if (!locked)
+                return false; // unlock sem lock anterior
+            locked = false;
+
+            // novo unlock não pode vir antes desse unlock
+            if (unlockTime < act.getTime())
+                return false;
+        }
+    }
+
+    // Também evitar lockTime > unlockTime
+    if (unlockTime <= lockTime)
+        return false;
+
+    return true;
+}
+
+const bool TCB::existMutexActionId(unsigned int id)
+{
+    size_t tam = mutexesAction.size();
+    for(size_t i = 0; i < tam; i++)
+        if(mutexesAction[i].getId() == id)
+            return true;
+
+    return false;
 }
 
 // Getters
@@ -208,6 +362,7 @@ void TCB::copyTCB(const TCB &t)
         endTime = t.endTime;
         state = t.state;
         IO_operations = t.IO_operations;
+        mutexesAction = t.mutexesAction;
     }
     return;
 }
@@ -228,6 +383,7 @@ TCB& TCB::operator=(const TCB &t)
         endTime = t.endTime;
         state = t.state;
         IO_operations = t.IO_operations;
+        mutexesAction = t.mutexesAction;
     }
     return *this; // retorna o objeto atual (por referência)
 }
